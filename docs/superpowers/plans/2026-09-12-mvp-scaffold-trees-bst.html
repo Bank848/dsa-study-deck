@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DSA Study Deck — MVP Scaffold + Trees&amp;BST — Plan</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });</script>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --muted:#9da7b3;
+          --accent:#58a6ff; --add:#3fb950; --mod:#d29922; --del:#f85149; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; padding:32px 24px 96px; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  h2 { font-size:21px; margin:40px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  h3 { font-size:17px; margin:24px 0 8px; }
+  .tag { display:inline-block; font-size:12px; color:var(--muted); border:1px solid var(--border);
+         border-radius:999px; padding:2px 10px; margin-right:6px; }
+  .meta { color:var(--muted); margin:8px 0 0; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin:14px 0; }
+  .ba { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .ba > figure { margin:0; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px; }
+  .ba figcaption { font-weight:600; margin-bottom:8px; color:var(--muted); }
+  .ba .before figcaption::before { content:"◀ BEFORE  "; color:var(--del); }
+  .ba .after  figcaption::before { content:"AFTER ▶  ";  color:var(--add); }
+  @media (max-width:820px){ .ba { grid-template-columns:1fr; } }
+  .mermaid { background:#0b0f14; border-radius:8px; padding:10px; overflow:auto; }
+  .changes li { list-style:none; margin:4px 0; }
+  .changes .add::before { content:"+ "; color:var(--add); font-weight:700; }
+  .changes .mod::before { content:"~ "; color:var(--mod); font-weight:700; }
+  .changes .del::before { content:"− "; color:var(--del); font-weight:700; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+  pre { background:#0b0f14; border:1px solid var(--border); border-radius:8px; padding:12px 14px; overflow:auto; font-size:13px; }
+  code:not(pre code){ background:#0b0f14; border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .step { margin:6px 0; }
+  .step input { margin-right:8px; }
+  .pathline { color:var(--muted); font-size:13px; }
+  hr.section { border:0; border-top:2px dashed var(--border); margin:48px 0; }
+  .note { color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>DSA Study Deck — MVP Scaffold + Chapter 03 (Trees &amp; BST)</h1>
+  <p class="meta">
+    <span class="tag">2026-09-12</span>
+    <span class="tag">plan-pro</span>
+    <span class="tag">React 18</span>
+    <span class="tag">Vite 5</span>
+    <span class="tag">TypeScript</span>
+    <span class="tag">Tailwind CSS 3</span>
+    <span class="tag">Vitest</span>
+  </p>
+
+  <h2>📖 Read this first</h2>
+
+  <div class="card">
+    <strong>Goal.</strong> Turn the approved <code>mockup-v3-opus.html</code> design into a real,
+    buildable React + Vite + Tailwind site (static <code>dist/</code>, no backend) inside
+    <code>com-sci-site/</code>, with a chapter-agnostic layout shell and step-through visualizer
+    engine, and one fully working chapter (03 · Trees &amp; BST) proving the pattern end to end.
+    <br><br>
+    <strong>Key decisions.</strong> This plan deliberately ships <strong>1 real chapter, not 3</strong>.
+    The spec's MVP scope was chapters 01/02/03, but only chapter 03 has approved, fully-specified
+    content (the mockup's <code>insert(37)</code> demo) — chapters 01 (Intro &amp; Big-O) and 02
+    (Stacks &amp; Queues) have no step-data, pseudocode, or quiz content authored yet, and writing
+    plausible-but-unverified content for them here would violate the "no placeholders" rule and
+    risk technical inaccuracy against the source PDFs. Proving the engine on one real chapter first,
+    then fast-following with 01/02 as a follow-up plan once the pattern holds, is the safer
+    incremental path — consistent with the user's original "start small" instruction. Chapters
+    04–08 render as "coming soon" placeholders in the sidebar/router so the nav structure never
+    needs to change shape later. All visual/token decisions (palette, layout, no-sticky-stage,
+    no-collapse-button, equal-height panels, centered 860px doc column) come straight from the
+    already-approved <code>mockup-v3-opus.html</code> and <code>spec.md</code> — nothing new is
+    designed in this plan.
+  </div>
+
+  <h3>Before → After</h3>
+  <p class="note">Left = today (a static HTML mockup file + a tokens.json/css pair, no app). Right = after this plan lands.</p>
+  <div class="ba">
+    <figure class="before"><figcaption>Today</figcaption>
+      <div class="mermaid">
+flowchart TB
+  PDF["9 course PDFs"] -.not wired.-> MOCK
+  MOCK["mockup-v3-opus.html<br/>(static, hand-authored, vanilla JS)"]
+  TOK["design-tokens/tokens.json + .css<br/>(source of truth, unused by any app)"]
+  MOCK -. shares palette values only .- TOK
+      </div>
+    </figure>
+    <figure class="after"><figcaption>After this plan</figcaption>
+      <div class="mermaid">
+flowchart TB
+  TOK["design-tokens/tokens.css"] --> APP
+  subgraph APP["Vite + React app (src/)"]
+    ROUTER["App.tsx router<br/>8 chapter routes"] --> LAYOUT["ChapterLayout<br/>(SidebarRail + Topbar)"]
+    LAYOUT --> STAGE["Stage (visualizer engine)<br/>useVisualizer hook"]
+    LAYOUT --> DOC["Doc column<br/>ConceptCard / ComplexityTable / Quiz / ChapterNav"]
+    ROUTER -.chapters 01,02,04-08.-> STUB["ComingSoon page"]
+    ROUTER --chapter 03--> CH3["Chapter03 page<br/>TreeDiagram + insert(37) step data"]
+    CH3 --> STAGE
+    CH3 --> DOC
+  end
+  APP -->|"vite build"| DIST["dist/ static HTML+JS+CSS"]
+      </div>
+    </figure>
+  </div>
+
+  <h3>What's changing</h3>
+  <ul class="changes">
+    <li class="add"><code>com-sci-site/package.json, vite.config.ts, tailwind.config.ts, postcss.config.js, tsconfig*.json, index.html</code> — project scaffold</li>
+    <li class="add"><code>com-sci-site/src/index.css</code> — imports tokens.css + Tailwind layers</li>
+    <li class="add"><code>com-sci-site/src/types.ts</code> — shared domain types (VisualizerStep, ChapterMeta, QuizQuestion, ComplexityRow)</li>
+    <li class="add"><code>com-sci-site/src/data/chapters.ts</code> — 8-chapter manifest (3 wired, 5 "coming soon")</li>
+    <li class="add"><code>com-sci-site/src/App.tsx, src/main.tsx</code> — router shell</li>
+    <li class="add"><code>com-sci-site/src/pages/ComingSoonPage.tsx</code> — placeholder for unbuilt chapters</li>
+    <li class="add"><code>com-sci-site/src/components/layout/SidebarRail.tsx, Topbar.tsx, ChapterLayout.tsx</code> — layout shell</li>
+    <li class="add"><code>com-sci-site/src/components/visualizer/useVisualizer.ts, Stage.tsx, StepChips.tsx, StageControls.tsx, NarrationBar.tsx</code> — generic step-through engine</li>
+    <li class="add"><code>com-sci-site/src/components/content/ConceptCard.tsx, ComplexityTable.tsx, Quiz.tsx, ChapterNav.tsx</code> — shared doc-column components</li>
+    <li class="add"><code>com-sci-site/src/chapters/03-trees-bst/TreeDiagram.tsx, steps.ts, Chapter03Page.tsx, InsertDecisionFlowchart.tsx</code> — chapter 03 content, ported 1:1 from the mockup's step data</li>
+    <li class="add"><code>com-sci-site/vitest.config.ts, src/test/setup.ts</code> — test harness</li>
+  </ul>
+
+  <h3>⚡ Parallelization analysis</h3>
+  <div class="card">
+    <p>Task 1 (scaffold) is a hard prerequisite for everything — no test harness or dev server
+       exists before it. <strong>Fixed after review:</strong> Task 2 (types + chapter manifest +
+       router) must land <em>before</em> Tasks 3/4/5/6 start, not alongside them — every one of
+       those tasks' own test files imports a concrete symbol Task 2 creates (<code>CHAPTERS</code>
+       from <code>src/data/chapters.ts</code> for Task 3, <code>VisualizerStep</code>/
+       <code>ChapterMeta</code>/<code>ComplexityRow</code> from <code>src/types.ts</code> for
+       Tasks 4/5/6) — none of those modules exist until Task 2's steps create them, so a subagent
+       starting Task 3/4/5/6 from the post-Task-1 base alone hits an unresolved-module error
+       instead of the intended TDD red/green cycle. Once Task 2 has merged, Tasks 3, 4, 5, and 6
+       touch disjoint files and have no dependency on each other's output, so they run in parallel
+       together. Chapter 03 assembly (Task 7) depends on all of 3/4/5/6 finishing, so it must come
+       after. The build-verification task must be last.</p>
+    <ul>
+      <li><strong>Batch 1:</strong> Task 1 alone — nothing else can start until <code>package.json</code>/config files exist and <code>npm install</code> has run.</li>
+      <li><strong>Batch 2:</strong> Task 2 alone (types + chapter manifest + router) — touches <code>src/types.ts</code>, <code>src/data/chapters.ts</code>, <code>src/App.tsx</code>, <code>src/main.tsx</code>, <code>src/pages/ComingSoonPage.tsx</code>. Must finish and merge before Batch 3 starts — it's the shared dependency every other task's tests import from.</li>
+      <li><strong>Batch 3:</strong> Tasks 3, 4, 5, 6 in parallel, once Task 2 has merged — Task 3 (layout shell) only touches <code>src/components/layout/*</code>; Task 4 (visualizer engine) only touches <code>src/components/visualizer/*</code>; Task 5 (content components) only touches <code>src/components/content/*</code>; Task 6 (BST diagram + step data) only touches <code>src/chapters/03-trees-bst/*</code>. No file overlap between any pair, and each only consumes types/data Task 2 already produced.</li>
+      <li><strong>Batch 4:</strong> Task 7 (Chapter 03 page assembly) — needs Task 3 (ChapterLayout), Task 4 (Stage), Task 5 (ConceptCard/ComplexityTable/Quiz/ChapterNav), and Task 6 (TreeDiagram + steps) all merged first. Also updates <code>src/data/chapters.ts</code> (mark chapter 03 <code>available: true</code> with its route) and <code>src/App.tsx</code> (register the route) — both touched by Task 2, so Task 7 must start after Task 2's changes are merged, not run concurrently with it.</li>
+      <li><strong>Batch 5:</strong> Task 8 (production build verification) — must run last, after everything is merged.</li>
+    </ul>
+    <p class="note">Critical path (longest sequential chain): Task 1 → Task 2 → Task 7 → Task 8
+       (4 tasks deep — Task 2 gates Batch 3 but Batch 3's own tasks aren't on the critical path
+       since Task 7 needs all of them done anyway). Tasks that share a file and therefore
+       <em>cannot</em> run in parallel: Task 2 and Task 7 both edit <code>src/App.tsx</code> and
+       <code>src/data/chapters.ts</code> — Task 7 must wait for Task 2's version of those files,
+       not branch from scratch.</p>
+  </div>
+
+  <hr class="section" />
+
+  <h2>🛠 Implementation plan</h2>
+  <p class="note">For agentic workers: use <code>superpowers:subagent-driven-development</code> or
+     <code>superpowers:executing-plans</code> (or plan-pro's parallel execution). Steps use checkboxes for tracking.</p>
+
+  <div class="card">
+    <strong>Goal:</strong> Ship a working Vite+React+Tailwind static site for the DSA Study Deck with a
+    reusable layout/visualizer engine and one fully content-complete chapter (03 · Trees &amp; BST).<br>
+    <strong>Architecture:</strong> A chapter-agnostic shell (icon rail + topbar + non-sticky visualizer
+    stage + centered doc column) driven by a small chapter manifest; each chapter supplies its own
+    diagram renderer and step data through a generic <code>useVisualizer</code> hook and
+    <code>Stage</code> component, so adding chapter 04+ later means writing chapter-local files only,
+    never touching the shell.<br>
+    <strong>Tech Stack:</strong> React 18, Vite 5, TypeScript 5, Tailwind CSS 3 (tokens consumed as raw
+    CSS custom properties from <code>design-tokens/tokens.css</code>, no theme-extend duplication),
+    react-router-dom 6, lucide-react, Vitest + React Testing Library + jsdom.
+  </div>
+
+  <div class="card">
+    <strong>Global Constraints</strong> (from <code>spec.md</code> — apply to every task):
+    <ul>
+      <li>Static output only — <code>vite build</code> → <code>dist/</code>, no server/backend/database anywhere.</li>
+      <li>Icons: <code>lucide-react</code> only, colored via <code>currentColor</code>/CSS token — never a hardcoded hex, never AI-generated.</li>
+      <li>Colors: consume <code>design-tokens/tokens.css</code> custom properties directly (e.g. <code>var(--color-accent)</code>) — never hardcode a hex that duplicates a token.</li>
+      <li><code>--color-highlight</code> (amber) is reserved for "current step / you are here" only — never reused for a different meaning in any new component.</li>
+      <li>Typography: JetBrains Mono for code/labels, IBM Plex Sans / IBM Plex Sans Thai for body — self-hosted via <code>@fontsource/*</code> imports in <code>src/index.css</code> (Task 1), never a CDN link (spec §7: the site must work offline from disk).</li>
+      <li>Chapter manifest must stay data-driven — no chapter gets a hardcoded nav entry outside <code>src/data/chapters.ts</code>.</li>
+      <li><strong>Ponytail discipline on every new-code step:</strong> before writing a step's implementation code, run the <code>ponytail</code> ladder (YAGNI → stdlib → native → dependency → one-liner) — this is a scaffold-and-content plan with mostly small, isolated units (a hook, a data file, a presentational component), which is exactly ponytail's proactive-trigger shape per this project's global rules. Skip it only for the few steps that are genuinely algorithm-shaped or already minimal (e.g. the BST step-array port in Task 6, which is a 1:1 data port, not new logic). Mark any deliberately-skipped simplification inline as <code>{/* ponytail: &lt;reason&gt; */}</code> rather than silently adding complexity.</li>
+    </ul>
+  </div>
+
+  <h3>File structure</h3>
+  <ul class="changes">
+    <li class="add"><code>com-sci-site/package.json</code> — deps + scripts (dev/build/test)</li>
+    <li class="add"><code>com-sci-site/vite.config.ts</code> — Vite + React plugin config</li>
+    <li class="add"><code>com-sci-site/tailwind.config.ts</code> — content globs only (no theme.extend needed, tokens are raw CSS vars)</li>
+    <li class="add"><code>com-sci-site/postcss.config.js</code> — Tailwind + autoprefixer</li>
+    <li class="add"><code>com-sci-site/tsconfig.json, tsconfig.node.json</code> — TS project config</li>
+    <li class="add"><code>com-sci-site/index.html</code> — Vite entry HTML, Google Fonts links, root div</li>
+    <li class="add"><code>com-sci-site/vitest.config.ts</code> — Vitest + jsdom environment</li>
+    <li class="add"><code>com-sci-site/src/test/setup.ts</code> — jest-dom matchers setup</li>
+    <li class="add"><code>com-sci-site/src/main.tsx</code> — React root mount</li>
+    <li class="add"><code>com-sci-site/src/index.css</code> — <code>@import</code> tokens.css + Tailwind layers + base body styles</li>
+    <li class="add"><code>com-sci-site/src/types.ts</code> — <code>VisualizerStep</code> (generic envelope), <code>Scene</code>/<code>TreeScene</code>, <code>NodeState</code>, <code>EdgeState</code>, <code>ChapterMeta</code>, <code>QuizQuestion</code>, <code>ComplexityRow</code></li>
+    <li class="add"><code>com-sci-site/src/data/chapters.ts</code> — chapter manifest (8 entries)</li>
+    <li class="add"><code>com-sci-site/src/App.tsx</code> — <code>HashRouter</code> (spec §2, works from <code>file://</code>) + route table</li>
+    <li class="add"><code>com-sci-site/src/pages/ComingSoonPage.tsx</code> — placeholder page for chapters 01,02,04-08</li>
+    <li class="add"><code>com-sci-site/src/components/layout/SidebarRail.tsx</code> — 72px icon rail, one button per chapter</li>
+    <li class="add"><code>com-sci-site/src/components/layout/Topbar.tsx</code> — chapter number/title/breadcrumb + PDF link button</li>
+    <li class="add"><code>com-sci-site/src/components/layout/ChapterLayout.tsx</code> — composes rail + topbar + children slot</li>
+    <li class="add"><code>com-sci-site/src/components/visualizer/useVisualizer.ts</code> — index/playing state, keyboard bindings, play interval</li>
+    <li class="add"><code>com-sci-site/src/components/visualizer/StepChips.tsx</code> — labeled step scrubber</li>
+    <li class="add"><code>com-sci-site/src/components/visualizer/StageControls.tsx</code> — prev/play-pause/next/reset buttons</li>
+    <li class="add"><code>com-sci-site/src/components/visualizer/NarrationBar.tsx</code> — narration strip under the stage</li>
+    <li class="add"><code>com-sci-site/src/components/visualizer/Stage.tsx</code> — composes the above + pseudocode pane + legend, non-sticky, full-width</li>
+    <li class="add"><code>com-sci-site/src/components/content/ConceptCard.tsx</code> — checkmark bullet card</li>
+    <li class="add"><code>com-sci-site/src/components/content/ComplexityTable.tsx</code> — table with good/warn badges + growth bar</li>
+    <li class="add"><code>com-sci-site/src/components/content/Quiz.tsx</code> — clickable options, correct/wrong state, explanation</li>
+    <li class="add"><code>com-sci-site/src/components/content/ChapterNav.tsx</code> — prev/next chapter footer nav</li>
+    <li class="add"><code>com-sci-site/src/chapters/03-trees-bst/steps.ts</code> — <code>insert(37)</code> step array + pseudocode lines, ported from the mockup</li>
+    <li class="add"><code>com-sci-site/src/chapters/03-trees-bst/TreeDiagram.tsx</code> — SVG tree renderer driven by one <code>VisualizerStep</code></li>
+    <li class="add"><code>com-sci-site/src/chapters/03-trees-bst/InsertDecisionFlowchart.tsx</code> — small static SVG decision flowchart for the Concept section</li>
+    <li class="add"><code>com-sci-site/src/chapters/03-trees-bst/Chapter03Page.tsx</code> — assembles Stage + TreeDiagram + concept/complexity/quiz content</li>
+  </ul>
+
+  <!-- ===================== TASK 1 ===================== -->
+  <h3>Task 1: Project scaffold + design-token wiring + test harness</h3>
+  <p class="pathline">
+    Create: <code>package.json, vite.config.ts, tailwind.config.ts, postcss.config.js, tsconfig.json, tsconfig.node.json, index.html, vitest.config.ts, src/test/setup.ts, src/index.css, src/main.tsx, src/App.tsx (stub), src/smoke.test.tsx, .gitignore, public/pdf/*.pdf (9 files copied)</code>
+  </p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Create package.json</strong></label></div>
+<pre><code>{
+  "name": "com-sci-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "lucide-react": "^0.451.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "@fontsource/ibm-plex-sans": "^5.0.0",
+    "@fontsource/ibm-plex-sans-thai": "^5.0.0",
+    "@fontsource/jetbrains-mono": "^5.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.1",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "autoprefixer": "^10.4.20",
+    "jsdom": "^25.0.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8",
+    "vite-plugin-singlefile": "^2.0.2",
+    "vitest": "^2.1.2"
+  }
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Create vite.config.ts</strong></label></div>
+<pre><code>import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { viteSingleFile } from 'vite-plugin-singlefile';
+
+// spec.md §2: dist/index.html must open from disk (file://). base:'./' fixes asset paths, but
+// Chrome still refuses &lt;script type="module" src="..."&gt; on file:// (origin "null" CORS).
+// Inlining JS+CSS(+fonts) into index.html sidesteps that; public/ (the PDFs) is still copied
+// next to it as separate files.
+export default defineConfig({
+  plugins: [react(), viteSingleFile()],
+  base: './',
+});
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Create tailwind.config.ts and postcss.config.js</strong></label></div>
+<pre><code>// tailwind.config.ts
+import type { Config } from 'tailwindcss';
+
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+} satisfies Config;
+</code></pre>
+<pre><code>// postcss.config.js
+export default {
+  plugins: { tailwindcss: {}, autoprefixer: {} },
+};
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Create tsconfig.json and tsconfig.node.json</strong></label></div>
+<pre><code>// tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+</code></pre>
+<pre><code>// tsconfig.node.json
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts", "vitest.config.ts"]
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 5: Create index.html</strong></label></div>
+<pre><code>&lt;!doctype html&gt;
+&lt;html lang="th"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8" /&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" /&gt;
+  &lt;title&gt;DSA Study Deck&lt;/title&gt;
+  &lt;!-- fonts are self-hosted via @fontsource/* imports in src/index.css (spec §7 — no CDN, must work offline) --&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div id="root"&gt;&lt;/div&gt;
+  &lt;script type="module" src="/src/main.tsx"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 6: Create src/index.css importing the design tokens</strong></label></div>
+<pre><code>@import '../design-tokens/tokens.css';
+/* spec.md §7: self-hosted fonts (no CDN) — the singlefile build inlines these as data URIs */
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+@import '@fontsource/jetbrains-mono/700.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans-thai/400.css';
+@import '@fontsource/ibm-plex-sans-thai/500.css';
+@import '@fontsource/ibm-plex-sans-thai/600.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'IBM Plex Sans', 'IBM Plex Sans Thai', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+/* spec.md §4: keyboard focus = accent-blue focus-ring token, never the amber node-halo */
+:focus-visible { outline: none; box-shadow: var(--shadow-focus-ring); }
+</code></pre>
+  <p class="note">Path note: <code>design-tokens/tokens.css</code> already exists one level up from
+  <code>src/</code> at <code>com-sci-site/design-tokens/tokens.css</code> (built in the earlier
+  design phase) — this import references it in place, no copy needed.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 7: Create a stub src/App.tsx and src/main.tsx so the app boots</strong></label></div>
+<pre><code>// src/App.tsx (stub — Task 2 replaces this with the real router)
+export default function App() {
+  return &lt;div className="p-8 text-[15px]"&gt;DSA Study Deck — scaffold OK&lt;/div&gt;;
+}
+</code></pre>
+<pre><code>// src/main.tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  &lt;React.StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/React.StrictMode&gt;
+);
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 8: Create vitest.config.ts and src/test/setup.ts</strong></label></div>
+<pre><code>// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    globals: true,
+  },
+});
+</code></pre>
+<pre><code>// src/test/setup.ts
+import '@testing-library/jest-dom/vitest';
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 9: Create .gitignore</strong></label></div>
+  <p class="note">Fixed after review: without this, nothing structurally stops
+  <code>node_modules/</code> or Task 8's <code>dist/</code> build output from being committed —
+  the plan's commit steps only avoid it because each one lists explicit paths by hand.</p>
+<pre><code>// .gitignore
+node_modules/
+dist/
+*.local
+.DS_Store
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 9b: Copy the 9 source PDFs into public/pdf/</strong></label></div>
+  <p class="note">spec.md §2: the PDF buttons must point inside <code>dist/</code>, not at the parent
+  folder (which is outside the packed deliverable). Vite copies <code>public/</code> verbatim into
+  <code>dist/</code>, so the built page links <code>pdf/&lt;file&gt;.pdf</code> relatively. Run from
+  <code>com-sci-site/</code> (Bash tool):</p>
+<pre><code>mkdir -p public/pdf &amp;&amp; cp ../*.pdf public/pdf/ &amp;&amp; ls public/pdf   # expect exactly 9 files</code></pre>
+  <p class="note">The filenames are referenced verbatim in <code>src/data/chapters.ts</code> (Task 2) — do not rename them. Check file sizes before committing (next commit step) — if the 9 PDFs push the repo past a comfortable size, gitignore <code>public/pdf/</code> and turn this into a build-time <code>"prebuild"</code> script instead (ponytail: the plain <code>cp</code> here is the right first rung, upgrade only if size actually bites).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 10: Write the failing smoke test</strong></label></div>
+<pre><code>// src/smoke.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import App from './App';
+
+describe('App scaffold', () => {
+  it('renders without crashing', () => {
+    render(&lt;App /&gt;);
+    expect(screen.getByText(/DSA Study Deck/i)).toBeInTheDocument();
+  });
+});
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 11: Install deps, run the test, verify it passes</strong></label></div>
+  <p class="note">Run: <code>npm install</code> in <code>com-sci-site/</code> — Expected: installs clean.<br>
+  Run: <code>npm test</code> — Expected: PASS (1 test).<br>
+  Run: <code>npm run dev</code>, open the printed localhost URL — Expected: page shows "DSA Study Deck — scaffold OK" on the dark <code>--color-background</code> ground (confirms tokens.css loaded).<br>
+  Spot-check (fixed after review — no test in this plan asserts computed style, so a missing/misspelled design token would otherwise fail silently): open devtools and confirm at least one non-primitive custom property resolves, e.g. <code>getComputedStyle(document.body).getPropertyValue('--color-accent')</code> returns <code>#6E9BFF</code>, not empty. The full token set this plan's later components consume (<code>--step-chip-*</code>, <code>--tree-node-*</code>, <code>--narration-bar-*</code>, <code>--quiz-option-*</code>, <code>--concept-card-*</code>, <code>--complexity-badge-*</code>) is already present in the generated <code>design-tokens/tokens.css</code> — this check only confirms the import path/build pipeline actually loads that file.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 12: Commit</strong></label></div>
+<pre><code>git add com-sci-site/package.json com-sci-site/vite.config.ts com-sci-site/tailwind.config.ts \
+  com-sci-site/postcss.config.js com-sci-site/tsconfig.json com-sci-site/tsconfig.node.json \
+  com-sci-site/index.html com-sci-site/vitest.config.ts com-sci-site/src com-sci-site/.gitignore \
+  com-sci-site/public/pdf
+git commit -m "chore: scaffold Vite+React+Tailwind app, wire design tokens, add test harness"
+</code></pre>
+
+  <!-- ===================== TASK 2 ===================== -->
+  <h3>Task 2: Domain types + chapter manifest + router shell</h3>
+  <p class="pathline">
+    Create: <code>src/types.ts, src/data/chapters.ts, src/pages/ComingSoonPage.tsx, src/App.test.tsx</code> ·
+    Modify: <code>src/App.tsx</code>
+  </p>
+  <p class="note"><strong>Interfaces</strong> — Consumes: nothing beyond React/react-router-dom.
+  Produces: <code>VisualizerStep</code> (generic <code>{chip, lines, narr, pill?, scene?}</code>
+  envelope per spec §5), <code>Scene</code>/<code>TreeScene</code>, <code>NodeState</code>,
+  <code>EdgeState</code>, <code>ChapterMeta</code>, <code>QuizQuestion</code>,
+  <code>ComplexityRow</code> (used by Tasks 4–7); <code>CHAPTERS: ChapterMeta[]</code> and <code>getChapterBySlug(slug: string):
+  ChapterMeta | undefined</code> from <code>src/data/chapters.ts</code> (used by Tasks 3, 7).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Create src/types.ts</strong></label></div>
+<pre><code>import type { LucideIcon } from 'lucide-react';
+
+export type NodeState = 'idle' | 'walk' | 'here' | 'slot' | 'fresh' | 'ok';
+export type EdgeState = 'idle' | 'walk' | 'ok';
+
+/** Scene payload for the `tree` diagram renderer (spec §5). Other scene types (array/stack for
+ *  chapters 01/02) are a known gap — add a new member to `Scene` when that content exists. */
+export interface TreeScene {
+  type: 'tree';
+  /** node id -&gt; visual state, keys are BST node values as strings */
+  nodes: Record&lt;string, NodeState&gt;;
+  /** "a-b" edge key -&gt; visual state */
+  edges?: Record&lt;string, EdgeState&gt;;
+}
+export type Scene = TreeScene;
+
+/** Generic step envelope shared by every demo in every chapter (spec §5). */
+export interface VisualizerStep {
+  /** short label shown on the step chip, e.g. "37 &gt; 30" */
+  chip: string;
+  /** 1-indexed pseudocode line numbers to highlight for this step */
+  lines: number[];
+  /** narration text. Markup is limited to **bold** and `code` (spec §5) — parsed by
+   *  NarrationBar's renderNarr() into real &lt;strong&gt;/&lt;code&gt; elements, never innerHTML. */
+  narr: string;
+  /** optional comparison/status pill, e.g. "37 &gt; 30" — omit for demos with nothing to compare */
+  pill?: string;
+  /** optional diagram payload; `scene.type` selects the renderer. Omit for diagram-less demos. */
+  scene?: Scene;
+}
+
+export interface ChapterMeta {
+  /** two-digit chapter number, e.g. "03" */
+  id: string;
+  /** route slug, e.g. "trees-bst" */
+  slug: string;
+  title: string;
+  /** breadcrumb text after the title, e.g. "Trees &amp; BST" */
+  section: string;
+  icon: LucideIcon;
+  /** false =&gt; sidebar links to the ComingSoon page instead of a real chapter page */
+  available: boolean;
+  /** source PDF filenames under public/pdf/ (spec §2) — chapter 01 has two */
+  pdfs: string[];
+}
+
+export interface QuizOption {
+  id: string;
+  label: string;
+  correct: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  prompt: string;
+  options: QuizOption[];
+  /** shown after the learner answers, regardless of correct/incorrect */
+  explain: string;
+}
+
+export interface ComplexityRow {
+  op: string;
+  best: string;
+  avg: string;
+  worst: string;
+  /** true -&gt; worst-case rendered with the "good" badge, false -&gt; "warn" badge */
+  worstGood: boolean;
+  /** 0-100, drives the growth-bar visual width */
+  growthPct: number;
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Create src/data/chapters.ts</strong></label></div>
+<pre><code>import {
+  Compass, Layers, GitBranch, Search, TrendingUp, Hash, TextSearch, Grid3x3,
+} from 'lucide-react';
+import type { ChapterMeta } from '../types';
+
+export const CHAPTERS: ChapterMeta[] = [
+  { id: '01', slug: 'intro-bigo',     title: 'Intro & Big-O',            section: 'Intro & Analysis',  icon: Compass,    available: false,
+    pdfs: ['2301265_01_Introduction-838647-17854249839839.pdf', '2301265_02_Analysis-838647-17854250657128.pdf'] },
+  { id: '02', slug: 'stacks-queues',  title: 'Stacks & Queues',          section: 'Stacks & Queues',   icon: Layers,     available: false,
+    pdfs: ['2301265_Stacks_Queues_2026-838647-17863739129894.pdf'] },
+  { id: '03', slug: 'trees-bst',      title: 'Binary Search Trees',      section: 'Trees & BST',       icon: GitBranch,  available: true,
+    pdfs: ['2301265_Trees_PDF-838647-17863747172453.pdf'] },
+  { id: '04', slug: 'search-trees',   title: 'Search Trees',             section: 'Search Trees',      icon: Search,     available: false,
+    pdfs: ['2301265_Search_Trees_V3-838647-17875466296651.pdf'] },
+  { id: '05', slug: 'heaps-pq',       title: 'Heaps & Priority Queues',  section: 'Heaps & PQ',        icon: TrendingUp, available: false,
+    pdfs: ['08_Heaps_PriorityQueues_DisjointSets-1038601-17884272948501.pdf'] },
+  { id: '06', slug: 'hash-tables',    title: 'Hash Tables',              section: 'Hash Tables',       icon: Hash,       available: false,
+    pdfs: ['07_Hash_Tables-1038601-17884271445313.pdf'] },
+  { id: '07', slug: 'string-matching',title: 'String Matching',          section: 'String Matching',   icon: TextSearch, available: false,
+    pdfs: ['06_String_Matching-1038601-17884269975673.pdf'] },
+  { id: '08', slug: 'dynamic-programming', title: 'Dynamic Programming', section: 'Dynamic Programming', icon: Grid3x3,  available: false,
+    pdfs: ['06_Dynamic_Programming-838647-17875466674679.pdf'] },
+];
+
+export function getChapterBySlug(slug: string): ChapterMeta | undefined {
+  return CHAPTERS.find((c) => c.slug === slug);
+}
+
+export function getAdjacentChapters(slug: string): { prev?: ChapterMeta; next?: ChapterMeta } {
+  const i = CHAPTERS.findIndex((c) => c.slug === slug);
+  if (i === -1) return {};
+  return { prev: CHAPTERS[i - 1], next: CHAPTERS[i + 1] };
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Create src/pages/ComingSoonPage.tsx</strong></label></div>
+<pre><code>import { useParams } from 'react-router-dom';
+import { getChapterBySlug } from '../data/chapters';
+
+export default function ComingSoonPage() {
+  const { slug } = useParams&lt;{ slug: string }&gt;();
+  const chapter = slug ? getChapterBySlug(slug) : undefined;
+
+  return (
+    &lt;div className="min-h-screen flex items-center justify-center px-6 text-center"&gt;
+      &lt;div&gt;
+        &lt;p className="mono text-[11px] tracking-[.14em] uppercase mb-2" style={{ color: 'var(--color-faint-foreground)' }}&gt;
+          {chapter ? `${chapter.id} · ${chapter.title}` : 'บทนี้'}
+        &lt;/p&gt;
+        &lt;h1 className="text-[20px] font-semibold mb-2"&gt;กำลังจะมาเร็วๆ นี้&lt;/h1&gt;
+        &lt;p className="text-[14px]" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          บทนี้ยังไม่เปิดใช้งาน ลองดูบท 03 · Trees &amp; BST ที่พร้อมแล้วก่อนได้
+        &lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Write the failing router test</strong></label></div>
+<pre><code>// src/App.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import App from './App';
+
+// HashRouter (spec §2) reads window.location.hash, so tests drive the hash, not history.pushState
+describe('App router', () => {
+  it('renders the coming-soon page for an unbuilt chapter', () => {
+    window.location.hash = '#/chapter/intro-bigo';
+    render(&lt;App /&gt;);
+    expect(screen.getByText(/กำลังจะมาเร็วๆ นี้/)).toBeInTheDocument();
+  });
+
+  it('redirects the root path to the first available chapter', () => {
+    window.location.hash = '#/';
+    render(&lt;App /&gt;);
+    expect(screen.getByText(/กำลังจะมาเร็วๆ นี้|Binary Search Trees/)).toBeInTheDocument();
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- App.test</code> — Expected: FAIL (App.tsx is still the Task 1 stub with no routes).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 5: Replace src/App.tsx with the real router</strong></label></div>
+<pre><code>import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { CHAPTERS } from './data/chapters';
+import ComingSoonPage from './pages/ComingSoonPage';
+
+export default function App() {
+  const firstAvailable = CHAPTERS.find((c) => c.available) ?? CHAPTERS[0];
+
+  // HashRouter, not BrowserRouter (spec §2): history routing breaks silently when dist/index.html
+  // is opened from disk — URLs look like index.html#/chapter/trees-bst
+  return (
+    &lt;HashRouter&gt;
+      &lt;Routes&gt;
+        &lt;Route path="/" element={&lt;Navigate to={`/chapter/${firstAvailable.slug}`} replace /&gt;} /&gt;
+        {CHAPTERS.filter((c) =&gt; !c.available).map((c) =&gt; (
+          &lt;Route key={c.slug} path={`/chapter/${c.slug}`} element={&lt;ComingSoonPage /&gt;} /&gt;
+        ))}
+        &lt;Route path="*" element={&lt;ComingSoonPage /&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/HashRouter&gt;
+  );
+}
+</code></pre>
+  <p class="note">Note for Task 7: the chapter-03 route is intentionally <em>not</em> registered
+  yet — with no <code>available: true</code> route wired, it currently falls through to the
+  wildcard <code>ComingSoonPage</code>, which is why the root-path test above accepts either
+  string. Task 7 adds <code>&lt;Route path="/chapter/trees-bst" element={&lt;Chapter03Page /&gt;} /&gt;</code>
+  above the wildcard route.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 6: Run tests, verify pass</strong></label></div>
+  <p class="note">Run: <code>npm test</code> — Expected: PASS (3 tests: smoke + 2 router tests).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 7: Commit</strong></label></div>
+<pre><code>git add com-sci-site/src/types.ts com-sci-site/src/data com-sci-site/src/pages com-sci-site/src/App.tsx com-sci-site/src/App.test.tsx
+git commit -m "feat: add domain types, chapter manifest, and router shell"
+</code></pre>
+
+  <!-- ===================== TASK 3 ===================== -->
+  <h3>Task 3: Layout shell — SidebarRail, Topbar, ChapterLayout</h3>
+  <p class="pathline">
+    Create: <code>src/components/layout/SidebarRail.tsx, Topbar.tsx, ChapterLayout.tsx, ChapterLayout.test.tsx</code>
+  </p>
+  <p class="note"><strong>Interfaces</strong> — Consumes: <code>ChapterMeta</code>,
+  <code>CHAPTERS</code> from Task 2. Produces: <code>ChapterLayout</code> component with props
+  <code>{ chapter: ChapterMeta; children: React.ReactNode }</code>, used by Task 7's
+  <code>Chapter03Page</code>.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Create src/components/layout/SidebarRail.tsx</strong></label></div>
+<pre><code>import { Link } from 'react-router-dom';
+import { CHAPTERS } from '../../data/chapters';
+import type { ChapterMeta } from '../../types';
+
+export default function SidebarRail({ activeSlug }: { activeSlug: string }) {
+  return (
+    &lt;aside
+      className="w-[72px] shrink-0 sticky top-0 h-screen flex flex-col items-center py-5 gap-3 border-r"
+      style={{ background: 'var(--color-background-rail)', borderColor: 'var(--color-border)' }}
+    &gt;
+      {CHAPTERS.map((c: ChapterMeta) =&gt; {
+        const Icon = c.icon;
+        const active = c.slug === activeSlug;
+        return (
+          &lt;Link
+            key={c.slug}
+            to={`/chapter/${c.slug}`}
+            title={`${c.id} · ${c.title}`}
+            className="w-[42px] h-[42px] rounded-lg flex items-center justify-center"
+            style={{
+              background: active ? 'var(--color-accent-soft)' : 'transparent',
+              color: active ? 'var(--color-accent)' : 'var(--color-faint-foreground)',
+            }}
+          &gt;
+            &lt;Icon size={17} /&gt;
+          &lt;/Link&gt;
+        );
+      })}
+    &lt;/aside&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Create src/components/layout/Topbar.tsx</strong></label></div>
+<pre><code>import { FileText } from 'lucide-react';
+import type { ChapterMeta } from '../../types';
+
+export default function Topbar({ chapter }: { chapter: ChapterMeta }) {
+  return (
+    &lt;header
+      className="h-[56px] px-6 flex items-center gap-4 border-b"
+      style={{ borderColor: 'var(--color-border)', background: 'var(--color-background)' }}
+    &gt;
+      &lt;div className="flex items-center gap-2.5 min-w-0"&gt;
+        &lt;span
+          className="mono text-[11px] px-1.5 py-0.5 rounded"
+          style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+        &gt;
+          {chapter.id}
+        &lt;/span&gt;
+        &lt;h1 className="text-[15px] font-semibold truncate"&gt;{chapter.title}&lt;/h1&gt;
+        &lt;span className="hidden md:inline text-[12px] truncate" style={{ color: 'var(--color-faint-foreground)' }}&gt;
+          · {chapter.section}
+        &lt;/span&gt;
+      &lt;/div&gt;
+      &lt;div className="ml-auto flex items-center gap-3"&gt;
+        {/* relative href resolves against dist/index.html, so it works from file:// (spec §2) */}
+        {chapter.pdfs.map((file, i) =&gt; (
+          &lt;a
+            key={file}
+            href={`pdf/${file}`}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3 h-8 rounded-lg mono text-[11px] flex items-center gap-1.5"
+            style={{ background: 'var(--color-surface-raised)', border: '1px solid var(--color-border)', color: 'var(--color-muted-foreground)' }}
+          &gt;
+            &lt;FileText size={13} /&gt; PDF ต้นฉบับ{chapter.pdfs.length &gt; 1 ? ` ${i + 1}` : ''}
+          &lt;/a&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/header&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Write the failing ChapterLayout test</strong></label></div>
+<pre><code>// src/components/layout/ChapterLayout.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import ChapterLayout from './ChapterLayout';
+import { CHAPTERS } from '../../data/chapters';
+
+describe('ChapterLayout', () =&gt; {
+  it('renders the chapter title and its children', () =&gt; {
+    const chapter = CHAPTERS.find((c) =&gt; c.slug === 'trees-bst')!;
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;ChapterLayout chapter={chapter}&gt;
+          &lt;p&gt;chapter body content&lt;/p&gt;
+        &lt;/ChapterLayout&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('Binary Search Trees')).toBeInTheDocument();
+    expect(screen.getByText('chapter body content')).toBeInTheDocument();
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- ChapterLayout</code> — Expected: FAIL (module does not exist).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Create src/components/layout/ChapterLayout.tsx</strong></label></div>
+<pre><code>import type { ReactNode } from 'react';
+import SidebarRail from './SidebarRail';
+import Topbar from './Topbar';
+import type { ChapterMeta } from '../../types';
+
+export default function ChapterLayout({ chapter, children }: { chapter: ChapterMeta; children: ReactNode }) {
+  return (
+    &lt;div className="flex min-h-screen"&gt;
+      &lt;SidebarRail activeSlug={chapter.slug} /&gt;
+      &lt;div className="flex-1 min-w-0"&gt;
+        &lt;Topbar chapter={chapter} /&gt;
+        {children}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 5: Run tests, verify pass, then commit</strong></label></div>
+  <p class="note">Run: <code>npm test -- ChapterLayout</code> — Expected: PASS.</p>
+<pre><code>git add com-sci-site/src/components/layout
+git commit -m "feat: add sidebar rail, topbar, and chapter layout shell"
+</code></pre>
+
+  <!-- ===================== TASK 4 ===================== -->
+  <h3>Task 4: Visualizer engine — useVisualizer hook + Stage</h3>
+  <p class="pathline">
+    Create: <code>src/components/visualizer/useVisualizer.ts, useVisualizer.test.ts, StepChips.tsx,
+    StageControls.tsx, NarrationBar.tsx, NarrationBar.test.tsx, Stage.tsx, Stage.test.tsx</code>
+  </p>
+  <p class="note"><strong>Interfaces</strong> — Consumes: <code>VisualizerStep</code> from Task 2
+  (nothing tree-specific — the engine must stay diagram-agnostic per spec §5/§6). Produces:
+  <code>useVisualizer(steps: VisualizerStep[])</code> returning <code>{ index: number; step:
+  VisualizerStep; total: number; playing: boolean; next(): void; prev(): void; reset(): void;
+  goTo(i: number): void; togglePlay(): void; onKeyDown(e: React.KeyboardEvent): void }</code>
+  (keyboard handler is attached to the stage element, never <code>window</code>);
+  <code>renderNarr(text: string): ReactNode[]</code> from <code>NarrationBar.tsx</code>;
+  <code>Stage</code> component with props
+  <code>{ operationLabel: string; scopeLabel?: string; steps: VisualizerStep[]; code: string[];
+  legend: { color: string; label: string }[]; renderDiagram: (step: VisualizerStep, index: number)
+  =&gt; React.ReactNode }</code> — used by Task 7's <code>Chapter03Page</code>, and by any future
+  chapter's page.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Write the failing useVisualizer test</strong></label></div>
+<pre><code>// src/components/visualizer/useVisualizer.test.ts
+import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useVisualizer } from './useVisualizer';
+import type { VisualizerStep } from '../../types';
+
+const STEPS: VisualizerStep[] = [
+  { chip: 'a', lines: [1], narr: 'first' },
+  { chip: 'b', lines: [2], narr: 'second' },
+  { chip: 'c', lines: [3], narr: 'third' },
+];
+
+describe('useVisualizer', () =&gt; {
+  beforeEach(() =&gt; vi.useFakeTimers());
+  afterEach(() =&gt; vi.useRealTimers());
+
+  it('starts at index 0 with the first step', () =&gt; {
+    const { result } = renderHook(() =&gt; useVisualizer(STEPS));
+    expect(result.current.index).toBe(0);
+    expect(result.current.step.narr).toBe('first');
+    expect(result.current.total).toBe(3);
+  });
+
+  it('next() advances but clamps at the last step', () =&gt; {
+    const { result } = renderHook(() =&gt; useVisualizer(STEPS));
+    act(() =&gt; result.current.next());
+    act(() =&gt; result.current.next());
+    act(() =&gt; result.current.next());
+    act(() =&gt; result.current.next());
+    expect(result.current.index).toBe(2);
+  });
+
+  it('prev() clamps at 0', () =&gt; {
+    const { result } = renderHook(() =&gt; useVisualizer(STEPS));
+    act(() =&gt; result.current.prev());
+    expect(result.current.index).toBe(0);
+  });
+
+  it('goTo() jumps directly to a step', () =&gt; {
+    const { result } = renderHook(() =&gt; useVisualizer(STEPS));
+    act(() =&gt; result.current.goTo(2));
+    expect(result.current.index).toBe(2);
+    expect(result.current.step.narr).toBe('third');
+  });
+
+  it('reset() returns to index 0', () =&gt; {
+    const { result } = renderHook(() =&gt; useVisualizer(STEPS));
+    act(() =&gt; result.current.goTo(2));
+    act(() =&gt; result.current.reset());
+    expect(result.current.index).toBe(0);
+  });
+
+  it('onKeyDown() advances on ArrowRight (handler is element-scoped, not a window listener)', () =&gt; {
+    const { result } = renderHook(() =&gt; useVisualizer(STEPS));
+    const ev = { key: 'ArrowRight', preventDefault() {}, target: document.body } as unknown as React.KeyboardEvent&lt;HTMLElement&gt;;
+    act(() =&gt; result.current.onKeyDown(ev));
+    expect(result.current.index).toBe(1);
+  });
+
+  it('togglePlay() auto-advances on an interval and stops at the last step', () =&gt; {
+    const { result } = renderHook(() =&gt; useVisualizer(STEPS));
+    act(() =&gt; result.current.togglePlay());
+    expect(result.current.playing).toBe(true);
+    act(() =&gt; vi.advanceTimersByTime(3000));
+    expect(result.current.index).toBe(2);
+    expect(result.current.playing).toBe(false);
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- useVisualizer</code> — Expected: FAIL (module does not exist).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Create src/components/visualizer/useVisualizer.ts</strong></label></div>
+<pre><code>import { useCallback, useEffect, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import type { VisualizerStep } from '../../types';
+
+/** Mirrors design token `step-control.autoplay-interval` (--step-control-autoplay-interval: 1200ms).
+ *  Kept as a number because setInterval needs ms, not a CSS string — change both together. */
+const PLAY_INTERVAL_MS = 1200;
+
+export function useVisualizer(steps: VisualizerStep[]) {
+  const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const last = steps.length - 1;
+
+  const goTo = useCallback((i: number) =&gt; setIndex(Math.max(0, Math.min(last, i))), [last]);
+  const next = useCallback(() =&gt; setIndex((i) =&gt; Math.min(last, i + 1)), [last]);
+  const prev = useCallback(() =&gt; setIndex((i) =&gt; Math.max(0, i - 1)), []);
+  const reset = useCallback(() =&gt; setIndex(0), []);
+  const togglePlay = useCallback(() =&gt; setPlaying((p) =&gt; !p), []);
+
+  useEffect(() =&gt; {
+    if (!playing) return;
+    const id = setInterval(() =&gt; {
+      setIndex((i) =&gt; {
+        const n = Math.min(last, i + 1);
+        if (n === last) setPlaying(false);
+        return n;
+      });
+    }, PLAY_INTERVAL_MS);
+    return () =&gt; clearInterval(id); // ponytail: effect cleanup owns the id, no timerRef needed
+  }, [playing, last]);
+
+  /** spec §5: shortcuts are scoped to the stage element (attach via onKeyDown on a tabIndex=0
+   *  element), never window — so `space` on a focused quiz option still answers the quiz.
+   *  Space is also left alone when a button inside the stage has focus, so a focused chip/control
+   *  activates normally instead of being hijacked into play/pause. */
+  const onKeyDown = useCallback((e: KeyboardEvent&lt;HTMLElement&gt;) =&gt; {
+    if (e.key === 'ArrowRight') next();
+    else if (e.key === 'ArrowLeft') prev();
+    else if (e.key === ' ' &amp;&amp; (e.target as HTMLElement).tagName !== 'BUTTON') { e.preventDefault(); togglePlay(); }
+    else if (e.key === 'r' || e.key === 'R') reset();
+  }, [next, prev, togglePlay, reset]);
+
+  return { index, step: steps[index], total: steps.length, playing, next, prev, reset, goTo, togglePlay, onKeyDown };
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Run tests, verify pass</strong></label></div>
+  <p class="note">Run: <code>npm test -- useVisualizer</code> — Expected: PASS (7 tests).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Create StepChips.tsx, StageControls.tsx, NarrationBar.tsx</strong></label></div>
+<pre><code>// src/components/visualizer/StepChips.tsx
+import type { VisualizerStep } from '../../types';
+
+export default function StepChips({
+  steps, index, onSelect,
+}: { steps: VisualizerStep[]; index: number; onSelect: (i: number) =&gt; void }) {
+  return (
+    &lt;div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 px-1"&gt;
+      {steps.map((s, k) =&gt; {
+        const state = k &lt; index ? 'done' : k === index ? 'current' : 'idle';
+        return (
+          &lt;button
+            key={k}
+            onClick={() =&gt; onSelect(k)}
+            className="mono text-[11px] px-2 py-1 rounded-md whitespace-nowrap shrink-0"
+            style={{
+              border: `1px solid ${state === 'current' ? 'var(--step-chip-current-border)' : state === 'done' ? 'var(--step-chip-done-border)' : 'var(--step-chip-border)'}`,
+              color: state === 'current' ? 'var(--step-chip-current-fg)' : state === 'done' ? 'var(--step-chip-done-fg)' : 'var(--color-faint-foreground)',
+              background: state === 'current' ? 'var(--step-chip-current-bg)' : state === 'done' ? 'var(--step-chip-done-bg)' : 'var(--step-chip-bg)',
+            }}
+          &gt;
+            {k + 1} {s.chip}
+          &lt;/button&gt;
+        );
+      })}
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<pre><code>// src/components/visualizer/StageControls.tsx
+import { ChevronLeft, Play, Pause, ChevronRight, RotateCcw } from 'lucide-react';
+
+export default function StageControls({
+  index, total, playing, onPrev, onNext, onTogglePlay, onReset,
+}: {
+  index: number; total: number; playing: boolean;
+  onPrev: () =&gt; void; onNext: () =&gt; void; onTogglePlay: () =&gt; void; onReset: () =&gt; void;
+}) {
+  const btn = 'w-7 h-7 rounded-md flex items-center justify-center';
+  return (
+    &lt;div className="flex items-center gap-1.5 shrink-0"&gt;
+      &lt;span className="mono text-[10.5px] mr-1 tabular-nums" style={{ color: 'var(--color-faint-foreground)' }}&gt;
+        {index + 1} / {total}
+      &lt;/span&gt;
+      &lt;button className={btn} title="ย้อน 1 ขั้น (←)" onClick={onPrev} style={{ background: 'var(--step-control-btn-bg)', color: 'var(--color-foreground)' }}&gt;
+        &lt;ChevronLeft size={14} /&gt;
+      &lt;/button&gt;
+      &lt;button
+        className={btn}
+        title="เล่นอัตโนมัติ (space)"
+        onClick={onTogglePlay}
+        style={{ background: 'var(--step-control-btn-primary-bg)', color: 'var(--step-control-btn-primary-fg)' }}
+      &gt;
+        {playing ? &lt;Pause size={13} /&gt; : &lt;Play size={13} /&gt;}
+      &lt;/button&gt;
+      &lt;button className={btn} title="ถัดไป 1 ขั้น (→)" onClick={onNext} style={{ background: 'var(--step-control-btn-bg)', color: 'var(--color-foreground)' }}&gt;
+        &lt;ChevronRight size={14} /&gt;
+      &lt;/button&gt;
+      &lt;button className={btn} title="เริ่มใหม่ (R)" onClick={onReset} style={{ background: 'var(--step-control-btn-bg)', color: 'var(--color-foreground)' }}&gt;
+        &lt;RotateCcw size={13} /&gt;
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<pre><code>// src/components/visualizer/NarrationBar.tsx
+import type { ReactNode } from 'react';
+import { CornerDownRight, CheckCircle2 } from 'lucide-react';
+
+/** spec.md §5 narration markup: only **bold** and `code`. One regex split, real elements, no innerHTML.
+ *  Capturing group keeps the delimiters in the split output so we can classify each piece. */
+const MARK = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+
+export function renderNarr(text: string): ReactNode[] {
+  return text.split(MARK).map((part, i) =&gt; {
+    if (part.startsWith('**') &amp;&amp; part.endsWith('**')) return &lt;strong key={i}&gt;{part.slice(2, -2)}&lt;/strong&gt;;
+    if (part.startsWith('`') &amp;&amp; part.endsWith('`')) return &lt;code key={i} className="mono text-[12px]"&gt;{part.slice(1, -1)}&lt;/code&gt;;
+    return part;
+  });
+}
+
+export default function NarrationBar({ text, done = false }: { text: string; done?: boolean }) {
+  const Icon = done ? CheckCircle2 : CornerDownRight;
+  return (
+    &lt;div
+      className="px-6 py-2.5 flex items-start gap-2.5 border-t"
+      style={{ borderColor: 'var(--color-border-subtle)', background: done ? 'var(--narration-bar-done-bg)' : 'var(--narration-bar-bg)' }}
+    &gt;
+      &lt;Icon size={14} style={{ color: done ? 'var(--narration-bar-done-icon)' : 'var(--narration-bar-icon)' }} className="shrink-0 mt-0.5" /&gt;
+      &lt;p className="text-[13px] leading-[1.6]" style={{ color: 'var(--narration-bar-fg)' }}&gt;{renderNarr(text)}&lt;/p&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<pre><code>// src/components/visualizer/NarrationBar.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import NarrationBar from './NarrationBar';
+
+describe('NarrationBar', () =&gt; {
+  it('turns **bold** and `code` markup into real elements, not innerHTML', () =&gt; {
+    render(&lt;NarrationBar text="เข้า **else** → เรียก `node.right`" /&gt;);
+    expect(screen.getByText('else').tagName).toBe('STRONG');
+    expect(screen.getByText('node.right').tagName).toBe('CODE');
+  });
+
+  it('never interprets raw HTML in narration text', () =&gt; {
+    render(&lt;NarrationBar text="&lt;b&gt;x&lt;/b&gt;" /&gt;);
+    expect(screen.getByText('&lt;b&gt;x&lt;/b&gt;')).toBeInTheDocument();
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- NarrationBar</code> — Expected: PASS (2 tests).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 5: Write the failing Stage test</strong></label></div>
+<pre><code>// src/components/visualizer/Stage.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import Stage from './Stage';
+import type { VisualizerStep } from '../../types';
+
+const STEPS: VisualizerStep[] = [
+  { chip: 'root', lines: [1], narr: 'first narration' },
+  { chip: 'done', lines: [2], narr: 'second narration' },
+];
+const CODE = ['line one', 'line two'];
+const LEGEND = [{ color: 'var(--tree-node-ok-stroke)', label: 'สำเร็จ' }];
+
+describe('Stage', () =&gt; {
+  it('renders operation label, pseudocode, legend, and first-step narration', () =&gt; {
+    render(
+      &lt;Stage
+        operationLabel="insert(37)"
+        scopeLabel="BST"
+        steps={STEPS}
+        code={CODE}
+        legend={LEGEND}
+        renderDiagram={(step) =&gt; &lt;div data-testid="diagram"&gt;{step.chip}&lt;/div&gt;}
+      /&gt;
+    );
+    expect(screen.getByText('insert(37)')).toBeInTheDocument();
+    expect(screen.getByText('line one')).toBeInTheDocument();
+    expect(screen.getByText('สำเร็จ')).toBeInTheDocument();
+    expect(screen.getByText('first narration')).toBeInTheDocument();
+    expect(screen.getByTestId('diagram')).toHaveTextContent('root');
+  });
+
+  it('advances the diagram and narration when a step chip is clicked', () =&gt; {
+    render(
+      &lt;Stage operationLabel="insert(37)" steps={STEPS} code={CODE} legend={LEGEND}
+        renderDiagram={(step) =&gt; &lt;div data-testid="diagram"&gt;{step.chip}&lt;/div&gt;} /&gt;
+    );
+    fireEvent.click(screen.getByText('2 done'));
+    expect(screen.getByTestId('diagram')).toHaveTextContent('done');
+    expect(screen.getByText('second narration')).toBeInTheDocument();
+  });
+
+  it('keyboard shortcuts fire only on the stage element, not the whole page (spec §5)', () =&gt; {
+    render(
+      &lt;Stage operationLabel="insert(37)" steps={STEPS} code={CODE} legend={LEGEND}
+        renderDiagram={(step) =&gt; &lt;div data-testid="diagram"&gt;{step.chip}&lt;/div&gt;} /&gt;
+    );
+    fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+    expect(screen.getByTestId('diagram')).toHaveTextContent('root');
+    fireEvent.keyDown(screen.getByTestId('stage'), { key: 'ArrowRight' });
+    expect(screen.getByTestId('diagram')).toHaveTextContent('done');
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- Stage.test</code> — Expected: FAIL (module does not exist).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 6: Create src/components/visualizer/Stage.tsx</strong></label></div>
+<pre><code>import type { ReactNode } from 'react';
+import { GitBranch } from 'lucide-react';
+import { useVisualizer } from './useVisualizer';
+import StepChips from './StepChips';
+import StageControls from './StageControls';
+import NarrationBar from './NarrationBar';
+import type { VisualizerStep } from '../../types';
+
+export interface StageProps {
+  operationLabel: string;
+  scopeLabel?: string;
+  steps: VisualizerStep[];
+  code: string[];
+  /** legend comes from the demo (spec §5), as a CSS color/var string — Stage knows no node states */
+  legend: { color: string; label: string }[];
+  renderDiagram: (step: VisualizerStep, index: number) =&gt; ReactNode;
+}
+
+export default function Stage({ operationLabel, scopeLabel, steps, code, legend, renderDiagram }: StageProps) {
+  const v = useVisualizer(steps);
+
+  return (
+    &lt;section
+      data-testid="stage"
+      tabIndex={0}
+      onKeyDown={v.onKeyDown}
+      className="border-b"
+      style={{ borderColor: 'var(--color-border)', background: 'var(--visualizer-panel-bg)' }}
+    &gt;
+      &lt;div className="px-6 h-[46px] flex items-center gap-3 border-b" style={{ borderColor: 'var(--color-border-subtle)' }}&gt;
+        &lt;div className="flex items-center gap-2 shrink-0"&gt;
+          &lt;GitBranch size={14} style={{ color: 'var(--color-accent)' }} /&gt;
+          &lt;span className="mono text-[12px] font-semibold"&gt;{operationLabel}&lt;/span&gt;
+          {scopeLabel &amp;&amp; &lt;span className="mono text-[10px]" style={{ color: 'var(--color-faint-foreground)' }}&gt;· {scopeLabel}&lt;/span&gt;}
+        &lt;/div&gt;
+        &lt;StepChips steps={steps} index={v.index} onSelect={v.goTo} /&gt;
+        &lt;StageControls index={v.index} total={v.total} playing={v.playing} onPrev={v.prev} onNext={v.next} onTogglePlay={v.togglePlay} onReset={v.reset} /&gt;
+      &lt;/div&gt;
+
+      &lt;div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_412px]"&gt;
+        &lt;div className="px-6 py-3 border-b xl:border-b-0 xl:border-r" style={{ borderColor: 'var(--color-border-subtle)' }}&gt;
+          {renderDiagram(v.step, v.index)}
+          &lt;div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 mono text-[9.5px]" style={{ color: 'var(--color-faint-foreground)' }}&gt;
+            {legend.map((l) =&gt; (
+              &lt;span key={l.label} className="flex items-center gap-1.5"&gt;
+                &lt;i className="w-2.5 h-2.5 rounded-full border-2 inline-block" style={{ borderColor: l.color }} /&gt;
+                {l.label}
+              &lt;/span&gt;
+            ))}
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div className="px-4 py-3 flex flex-col gap-2 min-w-0 h-full"&gt;
+          &lt;div className="flex items-center justify-between"&gt;
+            &lt;span className="mono text-[9.5px] tracking-[.12em] uppercase" style={{ color: 'var(--color-faint-foreground)' }}&gt;pseudocode&lt;/span&gt;
+            {v.step.pill &amp;&amp; (
+              &lt;span className="mono text-[10.5px] px-2 py-0.5 rounded" style={{ background: 'var(--color-highlight-soft)', color: 'var(--color-highlight)' }}&gt;
+                {v.step.pill}
+              &lt;/span&gt;
+            )}
+          &lt;/div&gt;
+          &lt;pre
+            className="mono text-[11px] leading-[1.8] rounded-[10px] py-2.5 overflow-x-auto flex-1"
+            style={{ background: 'var(--color-code-surface)', border: '1px solid var(--color-border)' }}
+          &gt;
+            {code.map((line, k) =&gt; {
+              const active = v.step.lines.includes(k + 1);
+              return (
+                &lt;div
+                  key={k}
+                  className="px-3"
+                  style={{
+                    background: active ? 'var(--pseudocode-block-active-line-bg)' : 'transparent',
+                    color: active ? 'var(--pseudocode-block-active-line-fg)' : 'var(--pseudocode-block-idle-line-fg)',
+                    borderLeft: active ? '2px solid var(--pseudocode-block-active-line-border)' : '2px solid transparent',
+                  }}
+                &gt;
+                  &lt;span className="inline-block w-5" style={{ color: 'var(--pseudocode-block-gutter-fg)' }}&gt;{k + 1}&lt;/span&gt;
+                  {line}
+                &lt;/div&gt;
+              );
+            })}
+          &lt;/pre&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+
+      &lt;NarrationBar text={v.step.narr} done={v.index === v.total - 1} /&gt;
+    &lt;/section&gt;
+  );
+}
+</code></pre>
+  <p class="note">Note: the stage is deliberately <em>not</em> <code>sticky</code> and has no
+  collapse/minimize control — both were explicitly removed from the approved mockup during
+  design review; do not re-add either.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 7: Run tests, verify pass, then commit</strong></label></div>
+  <p class="note">Run: <code>npm test -- visualizer</code> — Expected: PASS (all useVisualizer + Stage tests).</p>
+<pre><code>git add com-sci-site/src/components/visualizer
+git commit -m "feat: add step-through visualizer engine (useVisualizer + Stage)"
+</code></pre>
+
+  <!-- ===================== TASK 5 ===================== -->
+  <h3>Task 5: Shared content components — ConceptCard, ComplexityTable, Quiz, ChapterNav</h3>
+  <p class="pathline">
+    Create: <code>src/components/content/ConceptCard.tsx, ComplexityTable.tsx, ComplexityTable.test.tsx,
+    Quiz.tsx, Quiz.test.tsx, ChapterNav.tsx</code>
+  </p>
+  <p class="note"><strong>Interfaces</strong> — Consumes: <code>ComplexityRow</code>,
+  <code>QuizQuestion</code>, <code>ChapterMeta</code> from Task 2. Produces:
+  <code>ConceptCard({ points: string[] })</code>, <code>ComplexityTable({ rows: ComplexityRow[] })</code>,
+  <code>Quiz({ questions: QuizQuestion[] })</code>, <code>ChapterNav({ prev?: ChapterMeta; next?:
+  ChapterMeta })</code> — all used by Task 7's <code>Chapter03Page</code>.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Create src/components/content/ConceptCard.tsx</strong></label></div>
+<pre><code>import { Check } from 'lucide-react';
+
+export default function ConceptCard({ points }: { points: string[] }) {
+  return (
+    &lt;div className="grid gap-2.5 mb-5"&gt;
+      {points.map((p, k) =&gt; (
+        &lt;div
+          key={k}
+          className="rounded-xl p-4 flex gap-3"
+          style={{ background: 'var(--concept-card-bg)', border: '1px solid var(--concept-card-border)' }}
+        &gt;
+          &lt;span
+            className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+            style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+          &gt;
+            &lt;Check size={12} strokeWidth={3} /&gt;
+          &lt;/span&gt;
+          &lt;p className="text-[14px] leading-[1.7]" style={{ color: 'var(--color-foreground)' }}&gt;{p}&lt;/p&gt;
+        &lt;/div&gt;
+      ))}
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Write the failing ComplexityTable test</strong></label></div>
+<pre><code>// src/components/content/ComplexityTable.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import ComplexityTable from './ComplexityTable';
+import type { ComplexityRow } from '../../types';
+
+const ROWS: ComplexityRow[] = [
+  { op: 'search', best: 'O(log n)', avg: 'O(log n)', worst: 'O(n)', worstGood: false, growthPct: 80 },
+  { op: 'insert', best: 'O(log n)', avg: 'O(log n)', worst: 'O(n)', worstGood: false, growthPct: 80 },
+];
+
+describe('ComplexityTable', () =&gt; {
+  it('renders one row per operation with its worst-case value', () =&gt; {
+    render(&lt;ComplexityTable rows={ROWS} /&gt;);
+    expect(screen.getByText('search')).toBeInTheDocument();
+    expect(screen.getAllByText('O(n)')).toHaveLength(2);
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- ComplexityTable</code> — Expected: FAIL (module does not exist).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Create src/components/content/ComplexityTable.tsx</strong></label></div>
+<pre><code>import type { ComplexityRow } from '../../types';
+
+export default function ComplexityTable({ rows }: { rows: ComplexityRow[] }) {
+  return (
+    &lt;table className="w-full text-[13px] border-collapse mb-2"&gt;
+      &lt;thead&gt;
+        &lt;tr style={{ color: 'var(--color-faint-foreground)' }} className="mono text-[10px] uppercase tracking-[.08em]"&gt;
+          &lt;th className="text-left py-2 font-medium"&gt;operation&lt;/th&gt;
+          &lt;th className="text-left py-2 font-medium"&gt;best&lt;/th&gt;
+          &lt;th className="text-left py-2 font-medium"&gt;average&lt;/th&gt;
+          &lt;th className="text-left py-2 font-medium"&gt;worst&lt;/th&gt;
+          &lt;th className="text-left py-2 font-medium"&gt;growth&lt;/th&gt;
+        &lt;/tr&gt;
+      &lt;/thead&gt;
+      &lt;tbody&gt;
+        {rows.map((r) =&gt; (
+          &lt;tr key={r.op} style={{ borderTop: '1px solid var(--color-border-subtle)' }}&gt;
+            &lt;td className="py-2.5 mono"&gt;{r.op}&lt;/td&gt;
+            &lt;td className="py-2.5 mono" style={{ color: 'var(--color-muted-foreground)' }}&gt;{r.best}&lt;/td&gt;
+            &lt;td className="py-2.5 mono" style={{ color: 'var(--color-muted-foreground)' }}&gt;{r.avg}&lt;/td&gt;
+            &lt;td className="py-2.5"&gt;
+              &lt;span
+                className="mono text-[11px] px-2 py-0.5 rounded"
+                style={{
+                  background: r.worstGood ? 'var(--complexity-badge-good-bg)' : 'var(--complexity-badge-warn-bg)',
+                  color: r.worstGood ? 'var(--complexity-badge-good-fg)' : 'var(--complexity-badge-warn-fg)',
+                }}
+              &gt;
+                {r.worst}
+              &lt;/span&gt;
+            &lt;/td&gt;
+            &lt;td className="py-2.5 w-24"&gt;
+              &lt;div className="h-1.5 rounded-full" style={{ background: 'var(--color-surface-raised)' }}&gt;
+                &lt;div
+                  className="h-1.5 rounded-full"
+                  style={{ width: `${r.growthPct}%`, background: r.worstGood ? 'var(--color-success)' : 'var(--color-warning)' }}
+                /&gt;
+              &lt;/div&gt;
+            &lt;/td&gt;
+          &lt;/tr&gt;
+        ))}
+      &lt;/tbody&gt;
+    &lt;/table&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Run ComplexityTable test, verify pass</strong></label></div>
+  <p class="note">Run: <code>npm test -- ComplexityTable</code> — Expected: PASS.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 5: Write the failing Quiz test</strong></label></div>
+<pre><code>// src/components/content/Quiz.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import Quiz from './Quiz';
+import type { QuizQuestion } from '../../types';
+
+const QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'q1',
+    prompt: 'สมมุติมีค่านี้ ต้องเปรียบเทียบกี่ครั้ง?',
+    options: [
+      { id: 'a', label: '2 ครั้ง', correct: true },
+      { id: 'b', label: '4 ครั้ง', correct: false },
+    ],
+    explain: 'ความลึกของ node ที่แทรกคือ 2 จึงเปรียบเทียบ 2 ครั้ง',
+  },
+];
+
+describe('Quiz', () =&gt; {
+  it('shows the explanation only after an option is clicked', () =&gt; {
+    render(&lt;Quiz questions={QUESTIONS} /&gt;);
+    expect(screen.queryByText(/ความลึกของ node/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('2 ครั้ง'));
+    expect(screen.getByText(/ความลึกของ node/)).toBeInTheDocument();
+  });
+
+  it('marks the clicked wrong option and does not crash', () =&gt; {
+    render(&lt;Quiz questions={QUESTIONS} /&gt;);
+    fireEvent.click(screen.getByText('4 ครั้ง'));
+    expect(screen.getByText(/ความลึกของ node/)).toBeInTheDocument();
+  });
+
+  it('locks every option after the first answer (spec §5: one attempt per page load)', () =&gt; {
+    render(&lt;Quiz questions={QUESTIONS} /&gt;);
+    fireEvent.click(screen.getByText('4 ครั้ง'));
+    screen.getAllByRole('button').forEach((b) =&gt; expect(b).toBeDisabled());
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- Quiz.test</code> — Expected: FAIL (module does not exist).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 6: Create src/components/content/Quiz.tsx</strong></label></div>
+<pre><code>import { useState } from 'react';
+import type { QuizQuestion } from '../../types';
+
+export default function Quiz({ questions }: { questions: QuizQuestion[] }) {
+  const [answered, setAnswered] = useState&lt;Record&lt;string, string&gt;&gt;({});
+
+  return (
+    &lt;div className="grid gap-4"&gt;
+      {questions.map((q) =&gt; {
+        const chosen = answered[q.id];
+        return (
+          &lt;div key={q.id}&gt;
+            &lt;p className="text-[14px] mb-2.5" style={{ color: 'var(--color-foreground)' }}&gt;{q.prompt}&lt;/p&gt;
+            &lt;div className="grid gap-2"&gt;
+              {q.options.map((o) =&gt; {
+                const isChosen = chosen === o.id;
+                const revealState = chosen &amp;&amp; o.correct ? 'correct' : isChosen &amp;&amp; !o.correct ? 'wrong' : 'idle';
+                return (
+                  &lt;button
+                    key={o.id}
+                    disabled={!!chosen}
+                    onClick={() =&gt; setAnswered((a) =&gt; ({ ...a, [q.id]: o.id }))}
+                    className="text-left px-3.5 py-2.5 rounded-lg text-[13.5px] flex items-center gap-2.5"
+                    style={{
+                      background: revealState === 'correct' ? 'var(--quiz-option-correct-bg)' : revealState === 'wrong' ? 'var(--quiz-option-wrong-bg)' : 'var(--quiz-option-bg)',
+                      border: `1px solid ${revealState === 'correct' ? 'var(--quiz-option-correct-border)' : revealState === 'wrong' ? 'var(--quiz-option-wrong-border)' : 'var(--quiz-option-border)'}`,
+                      color: 'var(--color-foreground)',
+                    }}
+                  &gt;
+                    &lt;span
+                      className="mono text-[10.5px] uppercase w-5 h-5 rounded flex items-center justify-center shrink-0"
+                      style={{
+                        background: revealState === 'correct' ? 'var(--quiz-option-key-correct-bg)' : revealState === 'wrong' ? 'var(--quiz-option-key-wrong-bg)' : 'var(--color-surface-raised)',
+                        color: revealState === 'correct' ? 'var(--quiz-option-key-correct-fg)' : revealState === 'wrong' ? 'var(--quiz-option-key-wrong-fg)' : 'var(--color-muted-foreground)',
+                      }}
+                    &gt;
+                      {o.id}
+                    &lt;/span&gt;
+                    &lt;span&gt;{o.label}&lt;/span&gt;
+                  &lt;/button&gt;
+                );
+              })}
+            &lt;/div&gt;
+            {chosen &amp;&amp; (
+              &lt;p className="text-[13px] mt-2" style={{ color: 'var(--color-muted-foreground)' }}&gt;{q.explain}&lt;/p&gt;
+            )}
+          &lt;/div&gt;
+        );
+      })}
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 7: Run Quiz test, verify pass</strong></label></div>
+  <p class="note">Run: <code>npm test -- Quiz.test</code> — Expected: PASS.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 8: Create src/components/content/ChapterNav.tsx</strong></label></div>
+<pre><code>import { Link } from 'react-router-dom';
+import type { ChapterMeta } from '../../types';
+
+export default function ChapterNav({ prev, next }: { prev?: ChapterMeta; next?: ChapterMeta }) {
+  return (
+    &lt;nav className="grid grid-cols-2 gap-3 pt-6 border-t" style={{ borderColor: 'var(--color-border)' }}&gt;
+      {prev ? (
+        &lt;Link to={`/chapter/${prev.slug}`} className="p-3 rounded-lg" style={{ border: '1px solid var(--color-border)' }}&gt;
+          &lt;p className="text-[11px]" style={{ color: 'var(--color-faint-foreground)' }}&gt;← ก่อนหน้า&lt;/p&gt;
+          &lt;p className="text-[13px]"&gt;{prev.id} · {prev.title}&lt;/p&gt;
+        &lt;/Link&gt;
+      ) : &lt;div /&gt;}
+      {next ? (
+        &lt;Link to={`/chapter/${next.slug}`} className="p-3 rounded-lg text-right" style={{ border: '1px solid var(--color-border)' }}&gt;
+          &lt;p className="text-[11px]" style={{ color: 'var(--color-faint-foreground)' }}&gt;ถัดไป →&lt;/p&gt;
+          &lt;p className="text-[13px]"&gt;{next.id} · {next.title}&lt;/p&gt;
+        &lt;/Link&gt;
+      ) : &lt;div /&gt;}
+    &lt;/nav&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 9: Commit</strong></label></div>
+<pre><code>git add com-sci-site/src/components/content
+git commit -m "feat: add concept card, complexity table, quiz, and chapter nav components"
+</code></pre>
+
+  <!-- ===================== TASK 6 ===================== -->
+  <h3>Task 6: Chapter 03 — BST tree diagram + insert(37) step data</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/03-trees-bst/steps.ts, TreeDiagram.tsx, TreeDiagram.test.tsx</code>
+  </p>
+  <p class="note"><strong>Interfaces</strong> — Consumes: <code>VisualizerStep</code>,
+  <code>TreeScene</code>, <code>NodeState</code>, <code>EdgeState</code> from Task 2. Produces:
+  <code>BST_INSERT_STEPS: (VisualizerStep &amp; { scene: TreeScene })[]</code> (every step carries a
+  tree scene, so tests/consumers need no cast), <code>BST_INSERT_CODE: string[]</code>, and
+  <code>TreeDiagram({ scene }: { scene: TreeScene })</code> — the <code>tree</code> renderer for
+  spec §5's <code>scene.type</code>; Task 7 narrows <code>step.scene</code> before passing it in.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Create src/chapters/03-trees-bst/steps.ts (ported 1:1 from mockup-v3-opus.html)</strong></label></div>
+<pre><code>import type { VisualizerStep, TreeScene } from '../../types';
+
+export const BST_INSERT_CODE: string[] = [
+  'function insert(node, value):',
+  '  if node is null:',
+  '    return new Node(value)',
+  '  if value &lt; node.value:',
+  '    node.left  = insert(node.left, value)',
+  '  else:',
+  '    node.right = insert(node.right, value)',
+  '  return node',
+];
+
+export const BST_NODE_POS: Record&lt;string, { x: number; y: number }&gt; = {
+  '30': { x: 420, y: 58 },
+  '15': { x: 250, y: 142 },
+  '42': { x: 590, y: 142 },
+  '37': { x: 505, y: 226 },
+  '45': { x: 675, y: 226 },
+};
+
+export const BST_BASE_EDGES: [string, string][] = [['30', '15'], ['30', '42'], ['42', '45']];
+
+// Every step here carries a tree scene; the intersection type lets tests read `.scene.nodes`
+// without a cast while still being assignable to Stage's `VisualizerStep[]`.
+export const BST_INSERT_STEPS: (VisualizerStep &amp; { scene: TreeScene })[] = [
+  { chip: 'root', lines: [1], scene: { type: 'tree', nodes: { '30': 'here' } },
+    narr: 'เริ่มที่ **root = 30** ค่าที่จะแทรกคือ 37 — เทียบกันก่อนว่าจะลงซ้ายหรือขวา' },
+  { chip: '37 > 30', lines: [6, 7], pill: '37 > 30', scene: { type: 'tree', nodes: { '30': 'here' }, edges: { '30-42': 'walk' } },
+    narr: '`37 > 30` เข้า **else** → เดินลงกิ่งขวา เรียก insert ซ้ำกับ subtree ขวา' },
+  { chip: 'ถึง 42', lines: [1], scene: { type: 'tree', nodes: { '30': 'walk', '42': 'here' }, edges: { '30-42': 'walk' } },
+    narr: 'ตอนนี้อยู่ที่ **node 42** — ยังไม่ null จึงต้องเทียบต่ออีกชั้น' },
+  { chip: '37 < 42', lines: [4, 5], pill: '37 < 42', scene: { type: 'tree', nodes: { '30': 'walk', '42': 'here', '37': 'slot' }, edges: { '30-42': 'walk', '42-37': 'walk' } },
+    narr: '`37 < 42` เข้า **if** → เลี้ยวซ้าย เรียก insert กับ `node.left`' },
+  { chip: 'null', lines: [2], pill: 'null', scene: { type: 'tree', nodes: { '30': 'walk', '42': 'walk', '37': 'slot' }, edges: { '30-42': 'walk', '42-37': 'walk' } },
+    narr: 'ช่องซ้ายของ 42 เป็น **null** — เจอที่ว่างแล้ว การเดินหยุดที่นี่' },
+  { chip: 'new Node', lines: [3], scene: { type: 'tree', nodes: { '30': 'walk', '42': 'walk', '37': 'fresh' }, edges: { '30-42': 'walk', '42-37': 'walk' } },
+    narr: 'สร้าง `new Node(37)` แล้วคืนค่ากลับไปให้ตัวเรียก' },
+  { chip: 'linked', lines: [8], scene: { type: 'tree', nodes: { '30': 'walk', '42': 'walk', '37': 'ok' }, edges: { '30-42': 'walk', '42-37': 'ok' } },
+    narr: '`42.left = 37` ผูกเสร็จ แล้ว return ไต่กลับขึ้น call stack — ใช้เปรียบเทียบแค่ **2 ครั้ง** ทั้งที่ทรีมี 4 node' },
+];
+</code></pre>
+  <p class="note">Ported from <code>mockup-v3-opus.html</code> lines ~467-501 (the approved
+  <code>NODE</code>/<code>BASE_EDGES</code>/<code>STEPS</code>/<code>CODE</code> constants) — same
+  values, same order. Three mechanical changes vs the mockup: <code>nodes</code>/<code>edges</code>
+  are nested under <code>scene: { type: 'tree', ... }</code>, <code>cmp</code> became the optional
+  <code>pill</code>, and narration uses <code>**bold**</code>/<code>`code`</code> markup instead of
+  raw <code>&lt;b&gt;</code>/<code>&lt;code&gt;</code> HTML (spec §5).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Write the failing TreeDiagram test</strong></label></div>
+<pre><code>// src/chapters/03-trees-bst/TreeDiagram.test.tsx
+import { render } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import TreeDiagram from './TreeDiagram';
+import { BST_INSERT_STEPS } from './steps';
+
+describe('TreeDiagram', () =&gt; {
+  it('renders a labeled circle for every base node on step 1', () =&gt; {
+    const { container } = render(&lt;TreeDiagram scene={BST_INSERT_STEPS[0].scene} /&gt;);
+    const labels = Array.from(container.querySelectorAll('text')).map((t) =&gt; t.textContent);
+    expect(labels).toEqual(expect.arrayContaining(['30', '15', '42', '45']));
+    // node 37 is not yet introduced at step 0 (no 'slot' state present)
+    expect(labels).not.toContain('37');
+  });
+
+  it('renders the dashed "?" slot once a step introduces node 37 as slot state', () =&gt; {
+    const slotStep = BST_INSERT_STEPS.find((s) =&gt; s.scene.nodes['37'] === 'slot')!;
+    const { container } = render(&lt;TreeDiagram scene={slotStep.scene} /&gt;);
+    const labels = Array.from(container.querySelectorAll('text')).map((t) =&gt; t.textContent);
+    expect(labels).toContain('?');
+  });
+
+  it('renders node 37 with its real label once inserted', () =&gt; {
+    const okStep = BST_INSERT_STEPS.find((s) =&gt; s.scene.nodes['37'] === 'ok')!;
+    const { container } = render(&lt;TreeDiagram scene={okStep.scene} /&gt;);
+    const labels = Array.from(container.querySelectorAll('text')).map((t) =&gt; t.textContent);
+    expect(labels).toContain('37');
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- TreeDiagram</code> — Expected: FAIL (module does not exist).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Create src/chapters/03-trees-bst/TreeDiagram.tsx</strong></label></div>
+<pre><code>import type { TreeScene, NodeState, EdgeState } from '../../types';
+import { BST_NODE_POS, BST_BASE_EDGES } from './steps';
+
+const R = 27;
+
+const NODE_STYLE: Record&lt;NodeState, { fill: string; stroke: string; text: string; w: number; dash: string; weight: string }&gt; = {
+  idle: { fill: 'var(--tree-node-idle-fill)', stroke: 'var(--tree-node-idle-stroke)', text: 'var(--tree-node-idle-text)', w: 2, dash: '', weight: '400' },
+  walk: { fill: 'var(--tree-node-walk-fill)', stroke: 'var(--tree-node-walk-stroke)', text: 'var(--tree-node-walk-text)', w: 2, dash: '', weight: '500' },
+  here: { fill: 'var(--tree-node-here-fill)', stroke: 'var(--tree-node-here-stroke)', text: 'var(--tree-node-here-text)', w: 2.6, dash: '', weight: '700' },
+  slot: { fill: 'var(--tree-node-slot-fill)', stroke: 'var(--tree-node-slot-stroke)', text: 'var(--tree-node-slot-text)', w: 2, dash: '4 4', weight: '600' },
+  fresh: { fill: 'var(--tree-node-fresh-fill)', stroke: 'var(--tree-node-fresh-stroke)', text: 'var(--tree-node-fresh-text)', w: 2.6, dash: '', weight: '700' },
+  ok: { fill: 'var(--tree-node-ok-fill)', stroke: 'var(--tree-node-ok-stroke)', text: 'var(--tree-node-ok-text)', w: 2.6, dash: '', weight: '700' },
+};
+
+const EDGE_STYLE: Record&lt;EdgeState, { c: string; w: number }&gt; = {
+  idle: { c: 'var(--tree-edge-idle-stroke)', w: 2 },
+  walk: { c: 'var(--tree-edge-walk-stroke)', w: 2.4 },
+  ok: { c: 'var(--tree-edge-ok-stroke)', w: 2.6 },
+};
+
+/** Renderer for `scene.type === 'tree'` (spec §5). Takes the scene, not the whole step. */
+export default function TreeDiagram({ scene }: { scene: TreeScene }) {
+  const nodes = scene.nodes;
+  const edges: Record&lt;string, EdgeState&gt; = scene.edges ?? {};
+  const showSlot = '37' in nodes;
+  const allEdges: [string, string][] = [...BST_BASE_EDGES, ...(showSlot ? ([['42', '37']] as [string, string][]) : [])];
+
+  return (
+    &lt;svg width="100%" height="246" viewBox="0 0 780 260" preserveAspectRatio="xMidYMid meet"&gt;
+      {[['0', 58], ['1', 142], ['2', 226]].map(([d, y]) =&gt; (
+        &lt;g key={d}&gt;
+          &lt;line x1={108} y1={+y} x2={770} y2={+y} stroke="var(--color-border-subtle)" strokeWidth={1} strokeDasharray="2 6" /&gt;
+          &lt;text x={98} y={+y + 4} textAnchor="end" fontFamily="JetBrains Mono" fontSize={9.5} fill="var(--color-faint-foreground)"&gt;
+            depth {d}
+          &lt;/text&gt;
+        &lt;/g&gt;
+      ))}
+
+      {allEdges.map(([a, b]) =&gt; {
+        const st = EDGE_STYLE[edges[`${a}-${b}`] ?? 'idle'];
+        const dash = nodes['37'] === 'slot' &amp;&amp; b === '37' ? '5 4' : '';
+        return (
+          &lt;line key={`${a}-${b}`} x1={BST_NODE_POS[a].x} y1={BST_NODE_POS[a].y} x2={BST_NODE_POS[b].x} y2={BST_NODE_POS[b].y}
+            stroke={st.c} strokeWidth={st.w} strokeDasharray={dash} strokeLinecap="round" /&gt;
+        );
+      })}
+
+      {Object.keys(BST_NODE_POS).map((id) =&gt; {
+        if (id === '37' &amp;&amp; !showSlot) return null;
+        const state = nodes[id] ?? 'idle';
+        const st = NODE_STYLE[state];
+        const n = BST_NODE_POS[id];
+        const label = state === 'slot' ? '?' : id;
+        return (
+          &lt;g key={id}&gt;
+            {(state === 'here' || state === 'fresh') &amp;&amp; (
+              /* amber halo = token tree-node.here-ring (primitive.shadow.node-halo). That token is
+                 shadow-typed (box-shadow syntax) and cannot be an SVG stroke, so we reproduce it:
+                 here-stroke color at the halo's 0.35 alpha. NOT the focus-ring token (spec §4). */
+              &lt;circle cx={n.x} cy={n.y} r={35} fill="none" stroke="var(--tree-node-here-stroke)" strokeOpacity={0.35} strokeWidth={1.2} /&gt;
+            )}
+            {state !== 'slot' &amp;&amp; &lt;circle cx={n.x} cy={n.y} r={R} fill="var(--tree-node-base-fill)" /&gt;}
+            &lt;circle cx={n.x} cy={n.y} r={R} fill={st.fill} stroke={st.stroke} strokeWidth={st.w} strokeDasharray={st.dash} /&gt;
+            &lt;text x={n.x} y={n.y + 5} textAnchor="middle" fontFamily="JetBrains Mono" fontSize={state === 'slot' ? 14 : 15} fontWeight={st.weight} fill={st.text}&gt;
+              {label}
+            &lt;/text&gt;
+            {state === 'here' &amp;&amp; (
+              &lt;text x={n.x + R + 8} y={n.y - R - 4} fontFamily="JetBrains Mono" fontSize={10} fill="var(--color-highlight)"&gt;◂ กำลังดู&lt;/text&gt;
+            )}
+            {state === 'ok' &amp;&amp; (
+              &lt;text x={n.x + R + 9} y={n.y + 4} fontFamily="JetBrains Mono" fontSize={10} fill="var(--color-success)"&gt;◂ แทรกแล้ว&lt;/text&gt;
+            )}
+          &lt;/g&gt;
+        );
+      })}
+
+      &lt;g&gt;
+        &lt;rect x={10} y={8} width={114} height={30} rx={8} fill="var(--color-highlight-soft)" stroke="var(--color-highlight)" strokeDasharray="3 3" /&gt;
+        &lt;text x={67} y={27} textAnchor="middle" fontFamily="JetBrains Mono" fontSize={12} fill="var(--color-highlight)"&gt;value = 37&lt;/text&gt;
+      &lt;/g&gt;
+    &lt;/svg&gt;
+  );
+}
+</code></pre>
+  <p class="note">Ported from <code>mockup-v3-opus.html</code>'s <code>render()</code> function
+  (lines ~536-586), converted from imperative DOM/innerHTML building to declarative JSX — same
+  visual output (depth guides, opaque base circle under tinted fill so edges never show through,
+  dashed "?" slot, halo ring on here/fresh, side labels on here/ok).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Run tests, verify pass, then commit</strong></label></div>
+  <p class="note">Run: <code>npm test -- TreeDiagram</code> — Expected: PASS (3 tests).</p>
+<pre><code>git add com-sci-site/src/chapters/03-trees-bst/steps.ts com-sci-site/src/chapters/03-trees-bst/TreeDiagram.tsx com-sci-site/src/chapters/03-trees-bst/TreeDiagram.test.tsx
+git commit -m "feat: port BST insert(37) step data and tree diagram from approved mockup"
+</code></pre>
+
+  <!-- ===================== TASK 7 ===================== -->
+  <h3>Task 7: Chapter 03 page assembly + route registration</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/03-trees-bst/InsertDecisionFlowchart.tsx, Chapter03Page.tsx,
+    Chapter03Page.test.tsx</code> ·
+    Modify: <code>src/App.tsx</code>, <code>src/data/chapters.ts</code> (already has
+    <code>available: true</code> for <code>trees-bst</code> from Task 2 — this task only adds the route)
+  </p>
+  <p class="note"><strong>Interfaces</strong> — Consumes: <code>ChapterLayout</code> (Task 3),
+  <code>Stage</code> (Task 4), <code>ConceptCard</code>/<code>ComplexityTable</code>/<code>Quiz</code>/
+  <code>ChapterNav</code> (Task 5), <code>TreeDiagram</code>/<code>BST_INSERT_STEPS</code>/
+  <code>BST_INSERT_CODE</code> (Task 6), <code>getChapterBySlug</code>/<code>getAdjacentChapters</code>
+  (Task 2). Produces: default-exported <code>Chapter03Page</code>, registered at
+  <code>/chapter/trees-bst</code>.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Create src/chapters/03-trees-bst/InsertDecisionFlowchart.tsx</strong></label></div>
+<pre><code>export default function InsertDecisionFlowchart() {
+  const box = { fill: 'var(--color-surface-raised)', stroke: 'var(--color-border-strong)' };
+  return (
+    &lt;svg width="100%" height="150" viewBox="0 0 560 150"&gt;
+      &lt;rect x="10" y="55" width="120" height="40" rx="8" fill={box.fill} stroke={box.stroke} /&gt;
+      &lt;text x="70" y="79" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="11" fill="var(--color-foreground)"&gt;node is null?&lt;/text&gt;
+
+      &lt;line x1="130" y1="45" x2="220" y2="20" stroke="var(--color-success)" strokeWidth="1.6" /&gt;
+      &lt;text x="165" y="28" fontFamily="JetBrains Mono" fontSize="10" fill="var(--color-success)"&gt;ใช่&lt;/text&gt;
+      &lt;rect x="220" y="4" width="150" height="34" rx="8" fill="var(--color-success-soft)" stroke="var(--color-success)" /&gt;
+      &lt;text x="295" y="25" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="10.5" fill="var(--color-success)"&gt;return new Node(value)&lt;/text&gt;
+
+      &lt;line x1="130" y1="85" x2="220" y2="105" stroke="var(--color-warning)" strokeWidth="1.6" /&gt;
+      &lt;text x="165" y="112" fontFamily="JetBrains Mono" fontSize="10" fill="var(--color-warning)"&gt;ไม่&lt;/text&gt;
+      &lt;rect x="220" y="88" width="150" height="34" rx="8" fill={box.fill} stroke={box.stroke} /&gt;
+      &lt;text x="295" y="109" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="10.5" fill="var(--color-foreground)"&gt;value &lt; node.value?&lt;/text&gt;
+
+      &lt;line x1="370" y1="97" x2="430" y2="70" stroke="var(--color-accent)" strokeWidth="1.6" /&gt;
+      &lt;text x="392" y="80" fontFamily="JetBrains Mono" fontSize="10" fill="var(--color-accent)"&gt;ใช่&lt;/text&gt;
+      &lt;rect x="430" y="55" width="120" height="34" rx="8" fill="var(--color-accent-soft)" stroke="var(--color-accent)" /&gt;
+      &lt;text x="490" y="76" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="10"  fill="var(--color-accent)"&gt;ไปทางซ้าย&lt;/text&gt;
+
+      &lt;line x1="370" y1="113" x2="430" y2="130" stroke="var(--color-accent)" strokeWidth="1.6" /&gt;
+      &lt;text x="392" y="128" fontFamily="JetBrains Mono" fontSize="10" fill="var(--color-accent)"&gt;ไม่&lt;/text&gt;
+      &lt;rect x="430" y="113" width="120" height="34" rx="8" fill="var(--color-accent-soft)" stroke="var(--color-accent)" /&gt;
+      &lt;text x="490" y="134" textAnchor="middle" fontFamily="JetBrains Mono" fontSize="10" fill="var(--color-accent)"&gt;ไปทางขวา&lt;/text&gt;
+    &lt;/svg&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Write the failing Chapter03Page test</strong></label></div>
+<pre><code>// src/chapters/03-trees-bst/Chapter03Page.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import Chapter03Page from './Chapter03Page';
+
+describe('Chapter03Page', () =&gt; {
+  it('renders the stage, concept content, complexity table, and quiz', () =&gt; {
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter03Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('insert(37)')).toBeInTheDocument();
+    // this sentence appears twice (intro paragraph + ConceptCard's first bullet) — use
+    // getAllByText, not getByText, or Testing Library throws on the multi-match
+    expect(screen.getAllByText(/แต่ละ node มีลูกได้สูงสุด 2 ฝั่ง/).length).toBeGreaterThan(0);
+    expect(screen.getByText('search')).toBeInTheDocument();
+    expect(screen.getAllByText(/O\(log n\)/).length).toBeGreaterThan(0);
+  });
+});
+</code></pre>
+  <p class="note">Run: <code>npm test -- Chapter03Page</code> — Expected: FAIL (module does not exist).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Create src/chapters/03-trees-bst/Chapter03Page.tsx</strong></label></div>
+<pre><code>import ChapterLayout from '../../components/layout/ChapterLayout';
+import Stage from '../../components/visualizer/Stage';
+import ConceptCard from '../../components/content/ConceptCard';
+import ComplexityTable from '../../components/content/ComplexityTable';
+import Quiz from '../../components/content/Quiz';
+import ChapterNav from '../../components/content/ChapterNav';
+import InsertDecisionFlowchart from './InsertDecisionFlowchart';
+import TreeDiagram from './TreeDiagram';
+import { BST_INSERT_STEPS, BST_INSERT_CODE } from './steps';
+import { getChapterBySlug, getAdjacentChapters } from '../../data/chapters';
+import type { ComplexityRow, QuizQuestion } from '../../types';
+
+const CHAPTER = getChapterBySlug('trees-bst')!;
+const { prev, next } = getAdjacentChapters('trees-bst');
+
+const CONCEPT_POINTS = [
+  'แต่ละ node มีลูกได้สูงสุด 2 ฝั่ง ฝั่งซ้ายเก็บค่าที่น้อยกว่า ฝั่งขวาเก็บค่าที่มากกว่าเสมอ',
+  'กฎข้อเดียวนี้ทำให้ search, insert, delete เร็วได้ถึง O(log n) เพราะทุกครั้งที่เปรียบเทียบ เราตัดข้อมูลครึ่งหนึ่งทิ้งไปเลย',
+  'ความลึกของ node ที่ไปถึง เท่ากับจำนวนครั้งที่เปรียบเทียบพอดี — ดูได้จากเส้น depth guide บนไดอะแกรมด้านบน',
+];
+
+const COMPLEXITY_ROWS: ComplexityRow[] = [
+  { op: 'search', best: 'O(log n)', avg: 'O(log n)', worst: 'O(n)', worstGood: false, growthPct: 85 },
+  { op: 'insert', best: 'O(log n)', avg: 'O(log n)', worst: 'O(n)', worstGood: false, growthPct: 85 },
+  { op: 'delete', best: 'O(log n)', avg: 'O(log n)', worst: 'O(n)', worstGood: false, growthPct: 85 },
+  { op: 'space', best: 'O(n)', avg: 'O(n)', worst: 'O(n)', worstGood: true, growthPct: 40 },
+];
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'compare-count',
+    prompt: 'ระหว่างแทรก 37 ด้านบน ต้องเปรียบเทียบกี่ครั้งก่อนเจอที่ว่าง',
+    options: [
+      { id: 'a', label: '2 ครั้ง — เทียบที่ node 30 แล้ว node 42', correct: true },
+      { id: 'b', label: '4 ครั้ง — ทุก node ในทรี', correct: false },
+      { id: 'c', label: '1 ครั้ง — เทียบแค่ที่ root', correct: false },
+    ],
+    explain: 'เทียบที่ 30 (ไปทางขวา) แล้วเทียบที่ 42 (ไปทางซ้าย) แล้วเจอช่องว่าง รวม 2 ครั้ง เท่ากับความลึกของตำแหน่งที่แทรก',
+  },
+  {
+    id: 'worst-case-shape',
+    prompt: 'กรณีไหนทำให้ insert กลายเป็น O(n) แทนที่จะเป็น O(log n)',
+    options: [
+      { id: 'a', label: 'ทรีที่เตี้ยและกว้าง (balanced)', correct: false },
+      { id: 'b', label: 'ทรีที่เอียงไปทางเดียวจนกลายเป็นเส้นตรง (unbalanced)', correct: true },
+    ],
+    explain: 'ถ้าใส่ค่าที่เรียงลำดับอยู่แล้วไปเรื่อยๆ ทรีจะเอียงเป็นเส้นตรง ความลึก = n ทำให้ต้องเปรียบเทียบ n ครั้ง',
+  },
+];
+
+export default function Chapter03Page() {
+  return (
+    &lt;ChapterLayout chapter={CHAPTER}&gt;
+      &lt;Stage
+        operationLabel="insert(37)"
+        scopeLabel="BST"
+        steps={BST_INSERT_STEPS}
+        code={BST_INSERT_CODE}
+        legend={[
+          { color: 'var(--tree-node-walk-stroke)', label: 'เดินผ่านแล้ว' },
+          { color: 'var(--tree-node-here-stroke)', label: 'กำลังอยู่ตรงนี้' },
+          { color: 'var(--tree-node-ok-stroke)', label: 'แทรกสำเร็จ' },
+          { color: 'var(--tree-node-idle-stroke)', label: 'ยังไม่แตะ' },
+        ]}
+        renderDiagram={(step) =&gt; (step.scene?.type === 'tree' ? &lt;TreeDiagram scene={step.scene} /&gt; : null)}
+      /&gt;
+
+      &lt;main className="px-6 md:px-10 py-9 max-w-[860px] mx-auto"&gt;
+        &lt;p className="text-[15px] leading-[1.75] mb-9" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          แต่ละ node มีลูกได้สูงสุด 2 ฝั่ง ฝั่งซ้ายเก็บค่าที่น้อยกว่า ฝั่งขวาเก็บค่าที่มากกว่าเสมอ
+          กฎข้อเดียวนี้ทำให้ search, insert, delete เร็วได้ถึง O(log n) เพราะทุกครั้งที่เปรียบเทียบ
+          เราตัดข้อมูลครึ่งหนึ่งทิ้งไปเลย
+        &lt;/p&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Concept&lt;/h2&gt;
+          &lt;ConceptCard points={CONCEPT_POINTS} /&gt;
+          &lt;InsertDecisionFlowchart /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Complexity&lt;/h2&gt;
+          &lt;ComplexityTable rows={COMPLEXITY_ROWS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Quiz&lt;/h2&gt;
+          &lt;Quiz questions={QUIZ_QUESTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;ChapterNav prev={prev} next={next} /&gt;
+      &lt;/main&gt;
+    &lt;/ChapterLayout&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Run Chapter03Page test, verify pass</strong></label></div>
+  <p class="note">Run: <code>npm test -- Chapter03Page</code> — Expected: PASS.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 5: Register the route in src/App.tsx</strong></label></div>
+<pre><code>import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { CHAPTERS } from './data/chapters';
+import ComingSoonPage from './pages/ComingSoonPage';
+import Chapter03Page from './chapters/03-trees-bst/Chapter03Page';
+
+export default function App() {
+  const firstAvailable = CHAPTERS.find((c) =&gt; c.available) ?? CHAPTERS[0];
+
+  return (
+    &lt;HashRouter&gt;
+      &lt;Routes&gt;
+        &lt;Route path="/" element={&lt;Navigate to={`/chapter/${firstAvailable.slug}`} replace /&gt;} /&gt;
+        &lt;Route path="/chapter/trees-bst" element={&lt;Chapter03Page /&gt;} /&gt;
+        {CHAPTERS.filter((c) =&gt; !c.available).map((c) =&gt; (
+          &lt;Route key={c.slug} path={`/chapter/${c.slug}`} element={&lt;ComingSoonPage /&gt;} /&gt;
+        ))}
+        &lt;Route path="*" element={&lt;ComingSoonPage /&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/HashRouter&gt;
+  );
+}
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 6: Update src/App.test.tsx's root-redirect assertion now that chapter 03 is real</strong></label></div>
+<pre><code>// src/App.test.tsx — replace the second test body only, rest of the file unchanged
+it('redirects the root path to the first available chapter (trees-bst)', () =&gt; {
+  window.location.hash = '#/';
+  render(&lt;App /&gt;);
+  expect(screen.getByText('insert(37)')).toBeInTheDocument();
+});
+</code></pre>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 7: Run the full test suite, verify all pass</strong></label></div>
+  <p class="note">Run: <code>npm test</code> — Expected: PASS, every test file green (scaffold smoke,
+  App router, ChapterLayout, useVisualizer, NarrationBar, Stage, ComplexityTable, Quiz, TreeDiagram, Chapter03Page).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 8: Manual check in the dev server</strong></label></div>
+  <p class="note">Run: <code>npm run dev</code>, open <code>/</code> — Expected: URL becomes
+  <code>/#/chapter/trees-bst</code> (HashRouter), page matches <code>mockup-v3-opus.html</code>
+  (non-sticky stage, no collapse button, diagram/pseudocode side-by-side at <code>xl:</code> ≥1280px
+  and stacked below that, doc column centered at 860px). Click a step chip first (this focuses the
+  stage), then press <code>space</code>/<code>←</code>/<code>→</code>/<code>R</code> — shortcuts work.
+  Now Tab to a quiz option and press <code>space</code> — Expected: the option is answered, autoplay
+  does <em>not</em> start (spec §5 scope). Answer a quiz once — Expected: all its options disable.
+  Final step's narration bar turns green (done state). Click "PDF ต้นฉบับ" — Expected: opens
+  <code>/pdf/2301265_Trees_PDF-…pdf</code> in a new tab. Visit <code>/#/chapter/stacks-queues</code>
+  — Expected: shows the "coming soon" page, not a crash.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 9: Commit</strong></label></div>
+<pre><code>git add com-sci-site/src/chapters/03-trees-bst/InsertDecisionFlowchart.tsx \
+  com-sci-site/src/chapters/03-trees-bst/Chapter03Page.tsx \
+  com-sci-site/src/chapters/03-trees-bst/Chapter03Page.test.tsx \
+  com-sci-site/src/App.tsx com-sci-site/src/App.test.tsx
+git commit -m "feat: assemble chapter 03 (Trees & BST) page and wire its route"
+</code></pre>
+
+  <!-- ===================== TASK 8 ===================== -->
+  <h3>Task 8: Production build verification</h3>
+  <p class="pathline">
+    Test: manual build + preview verification, no new source files
+  </p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 1: Run the full test suite one more time</strong></label></div>
+  <p class="note">Run: <code>npm test</code> — Expected: PASS, all test files green.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 2: Type-check and build</strong></label></div>
+  <p class="note">Run: <code>npm run build</code> (runs <code>tsc -b &amp;&amp; vite build</code>) —
+  Expected: no TypeScript errors, <code>dist/</code> created with <code>index.html</code>,
+  hashed JS/CSS assets, and no warnings about missing tokens.css (confirms the
+  <code>@import '../design-tokens/tokens.css'</code> path from Task 1 resolved correctly at
+  build time, not just in dev mode).</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3: Preview the static build</strong></label></div>
+  <p class="note">Run: <code>npm run preview</code>, open the printed URL — Expected: identical
+  behavior to <code>npm run dev</code> (this proves the site works as a static
+  <code>dist/</code> with no dev-server-only behavior, satisfying the "static HTML/JS/CSS,
+  no backend" requirement from <code>spec.md</code> §2). Confirm the browser console has no
+  errors on load or while stepping through the visualizer.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 3b: Open dist/index.html directly from disk</strong></label></div>
+  <p class="note">spec.md §2's actual acceptance test — <code>npm run preview</code> is still an HTTP
+  server and would hide <code>file://</code> failures. Double-click
+  <code>com-sci-site/dist/index.html</code> in Explorer (Chrome). Expected: app renders (no
+  "blocked by CORS policy" console error — that is what the singlefile inlining prevents), URL is
+  <code>file:///…/dist/index.html#/chapter/trees-bst</code>, all step chips/keys work, fonts render as
+  JetBrains Mono / IBM Plex (self-hosted, so this must pass with Wi-Fi off), and "PDF ต้นฉบับ"
+  opens <code>dist/pdf/…pdf</code>. Then zip <code>dist/</code>, extract elsewhere, open again — same.</p>
+
+  <div class="step"><label><input type="checkbox"> <strong>Step 4: Commit the build verification (no source changes expected; commit only if anything needed fixing)</strong></label></div>
+<pre><code>git status
+# if Steps 1-3 required any source fix, stage and commit it here with an appropriate message.
+# if nothing changed, this task needs no commit of its own.
+</code></pre>
+
+</div>
+</body>
+</html>

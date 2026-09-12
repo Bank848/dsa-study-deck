@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DSA Study Deck — Plan A: Chapters 02/06/07/08 — Plan</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });</script>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --muted:#9da7b3;
+          --accent:#58a6ff; --add:#3fb950; --mod:#d29922; --del:#f85149; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; padding:32px 24px 96px; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  h2 { font-size:21px; margin:40px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  h3 { font-size:17px; margin:24px 0 8px; }
+  .tag { display:inline-block; font-size:12px; color:var(--muted); border:1px solid var(--border);
+         border-radius:999px; padding:2px 10px; margin-right:6px; }
+  .meta { color:var(--muted); margin:8px 0 0; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin:14px 0; }
+  .ba { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .ba > figure { margin:0; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px; }
+  .ba figcaption { font-weight:600; margin-bottom:8px; color:var(--muted); }
+  .ba .before figcaption::before { content:"◀ BEFORE  "; color:var(--del); }
+  .ba .after  figcaption::before { content:"AFTER ▶  ";  color:var(--add); }
+  @media (max-width:820px){ .ba { grid-template-columns:1fr; } }
+  .mermaid { background:#0b0f14; border-radius:8px; padding:10px; overflow:auto; }
+  .changes li { list-style:none; margin:4px 0; }
+  .changes .add::before { content:"+ "; color:var(--add); font-weight:700; }
+  .changes .mod::before { content:"~ "; color:var(--mod); font-weight:700; }
+  .changes .del::before { content:"− "; color:var(--del); font-weight:700; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+  pre { background:#0b0f14; border:1px solid var(--border); border-radius:8px; padding:12px 14px; overflow:auto; font-size:13px; }
+  code:not(pre code){ background:#0b0f14; border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .step { margin:6px 0; }
+  .step input { margin-right:8px; }
+  .pathline { color:var(--muted); font-size:13px; }
+  hr.section { border:0; border-top:2px dashed var(--border); margin:48px 0; }
+  .note { color:var(--muted); font-size:13px; }
+  table.batch { border-collapse:collapse; width:100%; }
+  table.batch td, table.batch th { border:1px solid var(--border); padding:6px 10px; text-align:left; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>DSA Study Deck — Plan A: Chapters 02, 06, 07, 08</h1>
+  <p class="meta">
+    <span class="tag">2026-09-13</span>
+    <span class="tag">plan-pro</span>
+    <span class="tag">Plan A of 4</span>
+    <span class="tag">React 18</span>
+    <span class="tag">TypeScript</span>
+    <span class="tag">Vitest</span>
+  </p>
+
+  <h2>📖 Read this first</h2>
+
+  <div class="card">
+    <strong>Goal.</strong> Build 4 of the 7 remaining chapters — 02 (Stacks &amp; Queues),
+    06 (Hash Tables), 07 (String Matching), 08 (Dynamic Programming) — each adding one new
+    <code>Scene</code> variant + a diagram renderer + a chapter page, following chapter 03's
+    proven pattern exactly. These 4 are grouped into one plan because each is a self-contained
+    "new scene type + one chapter" unit with no shared code beyond <code>types.ts</code> — unlike
+    heaps (needs chapter 03's tree renderer) or search trees (extends chapter 03's renderer), these
+    four don't touch any file another chapter-building plan touches.
+    <br><br>
+    <strong>Key decisions.</strong> Content for every chapter is sourced strictly from that
+    chapter's PDF (spec §1's fidelity rule) — nothing here is invented. Two content gaps this
+    surfaced, handled by narrowing scope and disclosing it (same pattern chapter 03 used):
+    (1) chapter 07's source PDF spends 20 of 37 slides on KMP/Horspool/Boyer-Moore, but those
+    algorithms don't fit a simple two-row sliding grid (KMP skips via a prefix function; Horspool
+    and Boyer-Moore compare right-to-left with table-driven jumps) — this plan's demo is scoped
+    explicitly to the PDF's naive/brute-force section (its own 2 slides), not the whole chapter.
+    (2) The hash-table and string-matching PDFs never state a formal Big-O table (hash tables:
+    only "average O(1)", no worst-case; string matching: every running-time line is posed as an
+    open question, never answered) — both chapters render a one-line note instead of a
+    <code>ComplexityTable</code>, rather than inventing bounds. Chapter 08's LCS demo tables the
+    real recurrence over the PDF's own example strings, hand-verified cell-by-cell in this plan;
+    it steps through row 1 in full (covering both the match and no-match recurrence branches) then
+    jumps to the completed 8×7 table rather than stepping all 56 cells — same narrowing chapter 03
+    applied to its own single insert(37) walkthrough.
+  </div>
+
+  <h3>Before → After</h3>
+  <p class="note">Left = today (chapter 03 shipped, <code>Scene</code> is a single-member union). Right = after this plan.</p>
+  <div class="ba">
+    <figure class="before"><figcaption>Today</figcaption>
+      <div class="mermaid">
+flowchart TB
+  TYPES["types.ts<br/>Scene = TreeScene"] --> CH3["Chapter03Page<br/>TreeDiagram"]
+  ROUTER["App.tsx<br/>trees-bst -> Chapter03Page<br/>everything else -> ComingSoon"]
+      </div>
+    </figure>
+    <figure class="after"><figcaption>After this plan</figcaption>
+      <div class="mermaid">
+flowchart TB
+  TYPES["types.ts<br/>Scene = TreeScene | LinearScene | BucketScene | MatchScene | GridScene"] --> CH3["Chapter03Page<br/>TreeDiagram"]
+  TYPES --> CH2["Chapter02Page<br/>LinearDiagram (stack+queue)"]
+  TYPES --> CH6["Chapter06Page<br/>BucketDiagram"]
+  TYPES --> CH7["Chapter07Page<br/>MatchDiagram"]
+  TYPES --> CH8["Chapter08Page<br/>GridDiagram"]
+  ROUTER["App.tsx<br/>4 new literal routes<br/>root redirect -> earliest available"] --> CH2
+  ROUTER --> CH6
+  ROUTER --> CH7
+  ROUTER --> CH8
+  ROUTER --> CH3
+      </div>
+    </figure>
+  </div>
+
+  <h3>What's changing</h3>
+  <ul class="changes">
+    <li class="mod"><code>src/types.ts</code> — add <code>LinearScene</code>, <code>BucketScene</code>, <code>MatchScene</code>, <code>GridScene</code>; extend <code>Scene</code> union</li>
+    <li class="mod"><code>src/data/chapters.ts</code> — flip <code>available: true</code> for 02/06/07/08</li>
+    <li class="add"><code>public/pdf/*.pdf</code> — copy this plan's 4 source PDFs</li>
+    <li class="add"><code>src/chapters/02-stacks-queues/{steps.ts,LinearDiagram.tsx,Chapter02Page.tsx}</code> + tests</li>
+    <li class="add"><code>src/chapters/06-hash-tables/{steps.ts,BucketDiagram.tsx,Chapter06Page.tsx}</code> + tests</li>
+    <li class="add"><code>src/chapters/07-string-matching/{steps.ts,MatchDiagram.tsx,Chapter07Page.tsx}</code> + tests</li>
+    <li class="add"><code>src/chapters/08-dynamic-programming/{steps.ts,GridDiagram.tsx,Chapter08Page.tsx}</code> + tests</li>
+    <li class="mod"><code>src/App.tsx</code> — 4 new literal routes</li>
+    <li class="mod"><code>src/App.test.tsx</code> — root-redirect test now expects chapter 02 (see Task 7 note)</li>
+  </ul>
+
+  <h3>Parallelization analysis</h3>
+  <table class="batch">
+    <tr><th>Batch</th><th>Tasks</th><th>Why</th></tr>
+    <tr><td>1</td><td>Task 1 (types.ts)</td><td>Every other task imports the new Scene types from here — must land first, alone</td></tr>
+    <tr><td>2</td><td>Task 2 (chapters.ts + PDFs)</td><td>Independent of Tasks 3-6's own files, but its <code>available: true</code> flip is asserted by each Page's own test — keep it before Batch 3 to avoid flaky ordering</td></tr>
+    <tr><td>3</td><td>Tasks 3, 4, 5, 6 (four chapters) in parallel</td><td>Each touches only its own <code>src/chapters/0N-.../</code> directory — zero file overlap</td></tr>
+    <tr><td>4</td><td>Task 7 (App.tsx wiring)</td><td>Needs all 4 Page components to exist; edits the one shared router file — must be alone</td></tr>
+    <tr><td>5</td><td>Task 8 (build verification)</td><td>Must run last, after everything is wired</td></tr>
+  </table>
+  <p class="note">Critical path: Task 1 → Task 2 → {3,4,5,6 in parallel} → Task 7 → Task 8. No task edits a file another task in the same batch edits.</p>
+
+  <hr class="section" />
+
+  <h2>🔧 Implementation plan</h2>
+
+  <div class="card">
+    <p><strong>Goal:</strong> Add chapters 02, 06, 07, 08 to the DSA Study Deck, each with a new <code>Scene</code> type, a diagram renderer, and a full chapter page, reusing the existing chapter-agnostic <code>Stage</code>/<code>useVisualizer</code>/<code>ChapterLayout</code> engine unchanged.</p>
+    <p><strong>Architecture:</strong> Same as chapter 03 — each chapter is a self-contained directory under <code>src/chapters/0N-&lt;slug&gt;/</code> with <code>steps.ts</code> (data), a <code>*Diagram.tsx</code> renderer keyed off its own <code>Scene</code> variant, and a <code>Chapter0NPage.tsx</code> that assembles <code>Stage</code> + concept/complexity/quiz/nav content.</p>
+    <p><strong>Tech Stack:</strong> React 18, TypeScript, Vite, Tailwind, Vitest + Testing Library (all already installed).</p>
+    <p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-09-13-remaining-chapters-design.md</code></p>
+  </div>
+
+  <h3>Global Constraints</h3>
+  <ul>
+    <li>Content (concept bullets, complexity numbers, quiz answers) must trace to the actual PDF text — no invented facts (spec §1).</li>
+    <li>No new design tokens — reuse the existing <code>--tree-node-*</code>/<code>--color-warning</code>/<code>--color-success</code> tokens for every new component's visual states (see Task 1 note).</li>
+    <li>HashRouter + literal per-chapter routes stay the pattern — no route-schema change (spec §4).</li>
+    <li>Never fabricate a complexity number the source doesn't state — render a one-line note instead of a table when the PDF gives none (chapters 06, 07).</li>
+  </ul>
+
+  <h3>Task 1: Extend <code>Scene</code> with 4 new variants</h3>
+  <p class="pathline">Modify: <code>src/types.ts</code></p>
+  <p class="note">No new design tokens: every new state below maps onto an existing <code>--tree-node-*</code> token (idle/walk/here/fresh/ok) or <code>--color-warning</code>, chosen for matching semantics (walk = "in progress", here = "current/being decided", fresh/ok = "just added / success", warning = "collision / mismatch / about to be removed"). This keeps the token surface unchanged.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Write the failing test</strong></div>
+  <pre>// src/types.test.ts (new file)
+import { describe, it, expect } from 'vitest';
+import type { LinearScene, BucketScene, MatchScene, GridScene, Scene } from './types';
+
+describe('Scene union (Plan A additions)', () => {
+  it('accepts a LinearScene as a Scene', () => {
+    const s: Scene = { type: 'linear', orientation: 'stack', cells: [{ value: 'A', state: 'idle' }], pointerLabel: 'top: A' };
+    expect(s.type).toBe('linear');
+  });
+  it('accepts a BucketScene as a Scene', () => {
+    const s: Scene = { type: 'bucket', buckets: [{ index: 0, values: [], state: 'idle' }] };
+    expect(s.type).toBe('bucket');
+  });
+  it('accepts a MatchScene as a Scene', () => {
+    const s: Scene = { type: 'match', text: 'ab', pattern: 'a', shift: 0, charStates: { 0: 'compare' } };
+    expect(s.type).toBe('match');
+  });
+  it('accepts a GridScene as a Scene', () => {
+    const s: Scene = { type: 'grid', cells: [[0]], cellState: { '0-0': 'filled' } };
+    expect(s.type).toBe('grid');
+  });
+});</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Run test to verify it fails</strong></div>
+  <p>Run: <code>npx vitest run src/types.test.ts</code><br>Expected: FAIL — TypeScript errors, the 4 new types don't exist yet.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Add the 4 scene types and extend the union</strong></div>
+  <pre>// src/types.ts — insert after the existing TreeScene block (before `export type Scene = TreeScene;`)
+
+export type LinearCellState = 'idle' | 'here' | 'pushed' | 'popped';
+/** Scene payload for stack/queue diagrams (chapter 02). `orientation` picks the layout;
+ *  `cells` is the full current contents in order (front/bottom -> rear/top). */
+export interface LinearScene {
+  type: 'linear';
+  orientation: 'stack' | 'queue';
+  cells: { value: string; state: LinearCellState }[];
+  /** label under the pointer end, e.g. "top: B" or "front: 7 / rear: 7" */
+  pointerLabel: string;
+}
+
+export type BucketSlotState = 'idle' | 'probe' | 'collision' | 'placed';
+/** Scene payload for hash-table diagrams (chapter 06). One entry per bucket index;
+ *  chained buckets hold more than one value. `probe` is defined for a future open-addressing
+ *  demo but unused by chapter 06's chaining-only walkthrough (spec §3 note). */
+export interface BucketScene {
+  type: 'bucket';
+  buckets: { index: number; values: string[]; state: BucketSlotState }[];
+}
+
+export type MatchCharState = 'idle' | 'compare' | 'match' | 'mismatch';
+/** Scene payload for string-matching diagrams (chapter 07), scoped to naive/brute-force
+ *  sliding comparison (spec §1 disclosure). `charStates` is keyed by pattern index. */
+export interface MatchScene {
+  type: 'match';
+  text: string;
+  pattern: string;
+  /** text index the pattern's [0] currently aligns to */
+  shift: number;
+  charStates: Record<number, MatchCharState>;
+}
+
+export type GridCellState = 'idle' | 'filling' | 'filled' | 'source';
+/** Scene payload for the DP 2D-table diagram (chapter 08). `cells` is row-major, null = not
+ *  yet computed. `cellState` is keyed `${row}-${col}`. */
+export interface GridScene {
+  type: 'grid';
+  cells: (number | null)[][];
+  activeCell?: [number, number];
+  /** cells that fed the active cell's recurrence, for dependency highlighting */
+  sourceCells?: [number, number][];
+  cellState: Record<string, GridCellState>;
+}
+
+// Replace the existing line `export type Scene = TreeScene;` with:
+export type Scene = TreeScene | LinearScene | BucketScene | MatchScene | GridScene;</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Run test to verify it passes</strong></div>
+  <p>Run: <code>npx vitest run src/types.test.ts</code><br>Expected: PASS (4 tests)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Run full typecheck to catch any break in chapter 03</strong></div>
+  <p>Run: <code>npx tsc -b</code><br>Expected: clean — chapter 03's <code>TreeDiagram</code> only ever narrows on <code>scene.type === 'tree'</code>, so widening the union doesn't affect it.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 6: Commit</strong></div>
+  <pre>git add src/types.ts src/types.test.ts
+git commit -m "feat: extend Scene union with linear/bucket/match/grid scene types"</pre>
+
+  <h3>Task 2: Wire chapters.ts + copy source PDFs</h3>
+  <p class="pathline">
+    Modify: <code>src/data/chapters.ts</code><br>
+    Create: <code>public/pdf/2301265_Stacks_Queues_2026-838647-17863739129894.pdf</code>,
+    <code>public/pdf/07_Hash_Tables-1038601-17884271445313.pdf</code>,
+    <code>public/pdf/06_String_Matching-1038601-17884269975673.pdf</code>,
+    <code>public/pdf/06_Dynamic_Programming-838647-17875466674679.pdf</code>
+  </p>
+  <p><strong>Interfaces:</strong> Produces: <code>CHAPTERS</code> with <code>available: true</code> for slugs <code>stacks-queues</code>, <code>hash-tables</code>, <code>string-matching</code>, <code>dynamic-programming</code>. Note: <code>getChapterBySlug</code> resolves by slug regardless of the <code>available</code> flag, so Tasks 3-6 don't strictly need this task to land first — it's ordered before Batch 3 purely to keep chapter availability deterministic before the routes in Task 7 depend on it, not because Tasks 3-6's own tests read <code>available</code>.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Copy the 4 source PDFs into public/pdf/</strong></div>
+  <pre>cp "../2301265_Stacks_Queues_2026-838647-17863739129894.pdf" public/pdf/
+cp "../07_Hash_Tables-1038601-17884271445313.pdf" public/pdf/
+cp "../06_String_Matching-1038601-17884269975673.pdf" public/pdf/
+cp "../06_Dynamic_Programming-838647-17875466674679.pdf" public/pdf/</pre>
+  <p class="note">Paths are relative to <code>com-sci-site/</code>; the source PDFs live one level up at <code>D:\brain\com sci learn\</code> (same layout chapter 03's Task 1 used).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Flip `available: true` for the 4 chapters</strong></div>
+  <pre>// src/data/chapters.ts — change these 4 lines' `available: false` to `available: true`
+// (id '02' stacks-queues, id '06' hash-tables, id '07' string-matching, id '08' dynamic-programming)
+// pdfs arrays are already correct — no change needed there.</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Run the existing chapters.ts test (if any) and the full suite to confirm nothing else assumed these were unavailable</strong></div>
+  <p>Run: <code>npx vitest run</code><br>Expected: <code>App.test.tsx</code>'s "renders the coming-soon page for an unbuilt chapter" test still passes (it uses <code>intro-bigo</code>, which stays <code>available: false</code> in this plan). The "redirects root" test will start failing here — that's expected and fixed in Task 7, not this task; note it in the commit message.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Commit</strong></div>
+  <pre>git add public/pdf/*.pdf src/data/chapters.ts
+git commit -m "feat: enable chapters 02/06/07/08 and add their source PDFs"</pre>
+
+  <h3>Task 3: Chapter 02 — Stacks &amp; Queues</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/02-stacks-queues/steps.ts</code>,
+    <code>src/chapters/02-stacks-queues/LinearDiagram.tsx</code>,
+    <code>src/chapters/02-stacks-queues/LinearDiagram.test.tsx</code>,
+    <code>src/chapters/02-stacks-queues/Chapter02Page.tsx</code>,
+    <code>src/chapters/02-stacks-queues/Chapter02Page.test.tsx</code>
+  </p>
+  <p><strong>Consumes:</strong> <code>LinearScene</code>/<code>LinearCellState</code> from Task 1; <code>getChapterBySlug</code>/<code>getAdjacentChapters</code> from Task 2 (their behavior is identical whether or not the chapter's <code>available</code> flag is set — <code>getChapterBySlug</code> looks up by slug alone — so Task 2 landing first is a batching convenience for deterministic ordering, not a real data dependency). <strong>Produces:</strong> default export <code>Chapter02Page</code>, no other task depends on this chapter's internals.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Write steps.ts</strong></div>
+  <pre>// src/chapters/02-stacks-queues/steps.ts
+// Content sourced from "2301265_Stacks_Queues_2026-838647-17863739129894.pdf":
+// - Stack push sequence is a natural one consistent with the PDF's push(A)/push(B)/push(C)
+//   code examples (no single worked numeric trace is given in the source for the stack ADT).
+// - Queue sequence is the PDF's own worked "Queue Example" table, rows 1-6, verbatim.
+import type { VisualizerStep, LinearScene } from '../../types';
+
+export const STACK_CODE: string[] = [
+  'function push(x):',
+  '  if size == capacity: throw FullStackException',
+  '  data[size] = x',
+  '  size += 1',
+  'function pop():',
+  '  if size == 0: throw EmptyStackException',
+  '  size -= 1',
+  '  return data[size]',
+];
+
+export const STACK_STEPS: (VisualizerStep & { scene: LinearScene })[] = [
+  { chip: 'stack ว่างเปล่า', lines: [1], scene: { type: 'linear', orientation: 'stack', cells: [], pointerLabel: 'top: -' },
+    narr: 'Stack ว่างเปล่า — **push** เพิ่มที่ปลายบนสุด (top), **pop** ลบจากปลายบนสุดเช่นกัน (LIFO)' },
+  { chip: 'push(A)', lines: [3, 4], scene: { type: 'linear', orientation: 'stack', cells: [{ value: 'A', state: 'pushed' }], pointerLabel: 'top: A' },
+    narr: '`push(A)` — ใส่ A ที่ตำแหน่ง size แล้วเพิ่ม size อีก 1' },
+  { chip: 'push(B)', lines: [3, 4], scene: { type: 'linear', orientation: 'stack', cells: [{ value: 'A', state: 'idle' }, { value: 'B', state: 'pushed' }], pointerLabel: 'top: B' },
+    narr: '`push(B)` — top เปลี่ยนเป็น B' },
+  { chip: 'push(C)', lines: [3, 4], scene: { type: 'linear', orientation: 'stack', cells: [{ value: 'A', state: 'idle' }, { value: 'B', state: 'idle' }, { value: 'C', state: 'pushed' }], pointerLabel: 'top: C' },
+    narr: '`push(C)` — top เปลี่ยนเป็น C' },
+  { chip: 'pop()', lines: [6, 7, 8], pill: 'return C', scene: { type: 'linear', orientation: 'stack', cells: [{ value: 'A', state: 'idle' }, { value: 'B', state: 'idle' }, { value: 'C', state: 'popped' }], pointerLabel: 'top: C (จะถูกลบ)' },
+    narr: '`pop()` — คืนค่า C (top เดิม) แล้วลด size ลง 1' },
+  { chip: 'หลัง pop', lines: [], scene: { type: 'linear', orientation: 'stack', cells: [{ value: 'A', state: 'idle' }, { value: 'B', state: 'here' }], pointerLabel: 'top: B' },
+    narr: 'เหลือ [A, B] — top ชี้ที่ B' },
+  { chip: 'top()', lines: [], pill: 'return B', scene: { type: 'linear', orientation: 'stack', cells: [{ value: 'A', state: 'idle' }, { value: 'B', state: 'here' }], pointerLabel: 'top: B' },
+    narr: '`top()` (peek) — คืนค่า B โดย**ไม่ลบ**ออกจาก stack' },
+];
+
+export const QUEUE_CODE: string[] = [
+  'function enqueue(x):',
+  '  data[rear] = x',
+  '  rear = (rear + 1) mod N',
+  '  size += 1',
+  'function dequeue():',
+  '  if size == 0: throw EmptyQueueException',
+  '  x = data[front]',
+  '  front = (front + 1) mod N',
+  '  size -= 1',
+  '  return x',
+];
+
+export const QUEUE_STEPS: (VisualizerStep & { scene: LinearScene })[] = [
+  { chip: 'queue ว่างเปล่า', lines: [1], scene: { type: 'linear', orientation: 'queue', cells: [], pointerLabel: 'front: - / rear: -' },
+    narr: 'Queue ว่างเปล่า — **enqueue** เพิ่มที่ rear, **dequeue** ลบจาก front (FIFO)' },
+  { chip: 'enqueue(5)', lines: [2, 3, 4], scene: { type: 'linear', orientation: 'queue', cells: [{ value: '5', state: 'pushed' }], pointerLabel: 'front: 5 / rear: 5' },
+    narr: '`enqueue(5)` — front และ rear ชี้ที่ 5 ตัวเดียว' },
+  { chip: 'enqueue(3)', lines: [2, 3, 4], scene: { type: 'linear', orientation: 'queue', cells: [{ value: '5', state: 'idle' }, { value: '3', state: 'pushed' }], pointerLabel: 'front: 5 / rear: 3' },
+    narr: '`enqueue(3)` — rear เปลี่ยนเป็น 3, front ยังเป็น 5' },
+  { chip: 'dequeue()', lines: [7, 8, 9, 10], pill: 'return 5', scene: { type: 'linear', orientation: 'queue', cells: [{ value: '5', state: 'popped' }, { value: '3', state: 'idle' }], pointerLabel: 'front: 5 (จะถูกลบ)' },
+    narr: '`dequeue()` — คืนค่า 5 (front เดิม) ตามตาราง Queue Example ในสไลด์' },
+  { chip: 'หลัง dequeue', lines: [], scene: { type: 'linear', orientation: 'queue', cells: [{ value: '3', state: 'here' }], pointerLabel: 'front: 3 / rear: 3' },
+    narr: 'เหลือ (3) — front และ rear ชี้ที่ 3 ตัวเดียว' },
+  { chip: 'enqueue(7)', lines: [2, 3, 4], scene: { type: 'linear', orientation: 'queue', cells: [{ value: '3', state: 'idle' }, { value: '7', state: 'pushed' }], pointerLabel: 'front: 3 / rear: 7' },
+    narr: '`enqueue(7)` — rear เปลี่ยนเป็น 7' },
+  { chip: 'dequeue()', lines: [7, 8, 9, 10], pill: 'return 3', scene: { type: 'linear', orientation: 'queue', cells: [{ value: '3', state: 'popped' }, { value: '7', state: 'idle' }], pointerLabel: 'front: 3 (จะถูกลบ)' },
+    narr: '`dequeue()` — คืนค่า 3 ตามตารางในสไลด์' },
+  { chip: 'front()', lines: [], pill: 'return 7', scene: { type: 'linear', orientation: 'queue', cells: [{ value: '7', state: 'here' }], pointerLabel: 'front: 7 / rear: 7' },
+    narr: '`front()` — คืนค่า 7 โดยไม่ลบออกจาก queue' },
+];</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Write LinearDiagram.tsx</strong></div>
+  <pre>// src/chapters/02-stacks-queues/LinearDiagram.tsx
+import type { LinearScene, LinearCellState } from '../../types';
+
+const CELL_STYLE: Record&lt;LinearCellState, { bg: string; border: string; text: string }&gt; = {
+  idle:   { bg: 'var(--tree-node-idle-fill)',  border: 'var(--tree-node-idle-stroke)',  text: 'var(--tree-node-idle-text)' },
+  here:   { bg: 'var(--tree-node-here-fill)',  border: 'var(--tree-node-here-stroke)',  text: 'var(--tree-node-here-text)' },
+  pushed: { bg: 'var(--tree-node-fresh-fill)', border: 'var(--tree-node-fresh-stroke)', text: 'var(--tree-node-fresh-text)' },
+  popped: { bg: 'var(--color-warning-soft)',   border: 'var(--color-warning)',          text: 'var(--color-warning)' },
+};
+
+export const LINEAR_STATE_LEGEND: { color: string; label: string }[] = [
+  { color: CELL_STYLE.pushed.border, label: 'เพิ่งเพิ่มเข้า' },
+  { color: CELL_STYLE.here.border, label: 'ตำแหน่งปัจจุบัน' },
+  { color: CELL_STYLE.popped.border, label: 'กำลังจะถูกลบ' },
+  { color: CELL_STYLE.idle.border, label: 'ยังไม่แตะ' },
+];
+
+export default function LinearDiagram({ scene }: { scene: LinearScene }) {
+  const vertical = scene.orientation === 'stack';
+  return (
+    &lt;div className="flex flex-col items-center gap-3 py-5"&gt;
+      &lt;div className={`flex ${vertical ? 'flex-col-reverse' : 'flex-row'} gap-2 min-h-[56px] items-center`}&gt;
+        {scene.cells.length === 0 &amp;&amp; (
+          &lt;div className="mono text-[11px] px-4 py-3 rounded-lg" style={{ color: 'var(--color-faint-foreground)', border: '1px dashed var(--color-border-strong)' }}&gt;
+            ว่าง
+          &lt;/div&gt;
+        )}
+        {scene.cells.map((c, i) =&gt; {
+          const st = CELL_STYLE[c.state];
+          return (
+            &lt;div
+              key={i}
+              className="mono text-[14px] font-semibold w-14 h-14 rounded-lg flex items-center justify-center"
+              style={{ background: st.bg, border: `2px solid ${st.border}`, color: st.text }}
+            &gt;
+              {c.value}
+            &lt;/div&gt;
+          );
+        })}
+      &lt;/div&gt;
+      &lt;p className="mono text-[10.5px]" style={{ color: 'var(--color-faint-foreground)' }}&gt;{scene.pointerLabel}&lt;/p&gt;
+    &lt;/div&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Write LinearDiagram.test.tsx and run it</strong></div>
+  <pre>// src/chapters/02-stacks-queues/LinearDiagram.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import LinearDiagram from './LinearDiagram';
+import { STACK_STEPS, QUEUE_STEPS } from './steps';
+
+describe('LinearDiagram', () =&gt; {
+  it('shows "ว่าง" when the stack has no cells', () =&gt; {
+    render(&lt;LinearDiagram scene={STACK_STEPS[0].scene} /&gt;);
+    expect(screen.getByText('ว่าง')).toBeInTheDocument();
+  });
+  it('renders every cell value for a populated stack', () =&gt; {
+    render(&lt;LinearDiagram scene={STACK_STEPS[3].scene} /&gt;);
+    expect(screen.getByText('A')).toBeInTheDocument();
+    expect(screen.getByText('B')).toBeInTheDocument();
+    expect(screen.getByText('C')).toBeInTheDocument();
+  });
+  it('shows the queue pointer label', () =&gt; {
+    render(&lt;LinearDiagram scene={QUEUE_STEPS[1].scene} /&gt;);
+    expect(screen.getByText('front: 5 / rear: 5')).toBeInTheDocument();
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/02-stacks-queues/LinearDiagram.test.tsx</code><br>Expected: PASS (3 tests)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Write Chapter02Page.tsx</strong></div>
+  <pre>// src/chapters/02-stacks-queues/Chapter02Page.tsx
+import ChapterLayout from '../../components/layout/ChapterLayout';
+import Stage from '../../components/visualizer/Stage';
+import ConceptCard from '../../components/content/ConceptCard';
+import ComplexityTable from '../../components/content/ComplexityTable';
+import Quiz from '../../components/content/Quiz';
+import ChapterNav from '../../components/content/ChapterNav';
+import LinearDiagram, { LINEAR_STATE_LEGEND } from './LinearDiagram';
+import { STACK_STEPS, STACK_CODE, QUEUE_STEPS, QUEUE_CODE } from './steps';
+import { getChapterBySlug, getAdjacentChapters } from '../../data/chapters';
+import type { ComplexityRow, QuizQuestion } from '../../types';
+
+const CHAPTER = getChapterBySlug('stacks-queues')!;
+const { prev, next } = getAdjacentChapters('stacks-queues');
+
+const CONCEPT_POINTS = [
+  'Stack ADT ทำงานแบบ Last-In-First-Out (LIFO) — เพิ่มและลบข้อมูลที่ปลายเดียวกันเสมอ (top) ด้วย push และ pop',
+  'Queue ADT ทำงานแบบ First-In-First-Out (FIFO) — เพิ่มข้อมูลที่ปลาย rear แล้วลบออกจากปลาย front ด้วย enqueue และ dequeue',
+  'ทั้งสองโครงสร้างใช้พื้นที่ O(n) และทุกการทำงาน (push/pop/enqueue/dequeue) ทำในเวลา O(1) เพราะไม่ต้องเลื่อนข้อมูลตัวอื่น',
+];
+
+const COMPLEXITY_ROWS: ComplexityRow[] = [
+  { op: 'push / enqueue', best: 'O(1)', avg: 'O(1)', worst: 'O(1)', worstGood: true, growthPct: 15 },
+  { op: 'pop / dequeue', best: 'O(1)', avg: 'O(1)', worst: 'O(1)', worstGood: true, growthPct: 15 },
+  { op: 'top / front (peek)', best: 'O(1)', avg: 'O(1)', worst: 'O(1)', worstGood: true, growthPct: 15 },
+  { op: 'space', best: 'O(n)', avg: 'O(n)', worst: 'O(n)', worstGood: true, growthPct: 40 },
+];
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'stack-order',
+    prompt: 'Stack ADT ทำงานตามกฎการเพิ่ม/ลบข้อมูลแบบใด',
+    options: [
+      { id: 'a', label: 'FIFO', correct: false },
+      { id: 'b', label: 'LIFO', correct: true },
+      { id: 'c', label: 'เข้าถึงแบบสุ่ม (random access)', correct: false },
+      { id: 'd', label: 'จัดลำดับความสำคัญ (priority-based)', correct: false },
+    ],
+    explain: 'สไลด์ "The Stack ADT" ระบุตรงๆ ว่า "Insertions and deletions follow the last-in first-out scheme"',
+  },
+  {
+    id: 'queue-example',
+    prompt: 'จากตาราง Queue Example ในสไลด์: enqueue(5); enqueue(3); dequeue() — dequeue() คืนค่าอะไร และเหลืออะไรใน queue',
+    options: [
+      { id: 'a', label: 'คืนค่า 3, เหลือ (5)', correct: false },
+      { id: 'b', label: 'คืนค่า 5, เหลือ (3)', correct: true },
+      { id: 'c', label: 'คืนค่า 5, เหลือ (5,3)', correct: false },
+      { id: 'd', label: 'คืนค่า 3, เหลือ ()', correct: false },
+    ],
+    explain: 'ตาราง Queue Example แถวที่ 1-3 ในสไลด์แสดงผลลัพธ์นี้ตรงๆ',
+  },
+  {
+    id: 'stack-array-time',
+    prompt: 'สไลด์ "Performance and Limitations" ระบุว่าแต่ละ operation ของ array-based Stack ใช้เวลาเท่าไหร่',
+    options: [
+      { id: 'a', label: 'O(log n)', correct: false },
+      { id: 'b', label: 'O(1)', correct: true },
+      { id: 'c', label: 'O(n)', correct: false },
+      { id: 'd', label: 'ไม่ได้ระบุไว้', correct: false },
+    ],
+    explain: 'ข้อความในสไลด์: "Each operation runs in time O(1)."',
+  },
+];
+
+export default function Chapter02Page() {
+  return (
+    &lt;ChapterLayout chapter={CHAPTER}&gt;
+      &lt;Stage
+        operationLabel="push / pop"
+        scopeLabel="Stack"
+        steps={STACK_STEPS}
+        code={STACK_CODE}
+        legend={LINEAR_STATE_LEGEND}
+        renderDiagram={(step) =&gt; (step.scene?.type === 'linear' ? &lt;LinearDiagram scene={step.scene} /&gt; : null)}
+      /&gt;
+      &lt;Stage
+        operationLabel="enqueue / dequeue"
+        scopeLabel="Queue"
+        steps={QUEUE_STEPS}
+        code={QUEUE_CODE}
+        legend={LINEAR_STATE_LEGEND}
+        renderDiagram={(step) =&gt; (step.scene?.type === 'linear' ? &lt;LinearDiagram scene={step.scene} /&gt; : null)}
+      /&gt;
+
+      &lt;main className="px-6 md:px-10 py-9 max-w-[860px] mx-auto"&gt;
+        &lt;p className="text-[15px] leading-[1.75] mb-9" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          {CONCEPT_POINTS[0]} {CONCEPT_POINTS[1]}
+        &lt;/p&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Concept&lt;/h2&gt;
+          &lt;ConceptCard points={CONCEPT_POINTS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Complexity&lt;/h2&gt;
+          &lt;ComplexityTable rows={COMPLEXITY_ROWS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Quiz&lt;/h2&gt;
+          &lt;Quiz questions={QUIZ_QUESTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;ChapterNav prev={prev} next={next} /&gt;
+      &lt;/main&gt;
+    &lt;/ChapterLayout&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Write Chapter02Page.test.tsx and run it</strong></div>
+  <pre>// src/chapters/02-stacks-queues/Chapter02Page.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import Chapter02Page from './Chapter02Page';
+
+describe('Chapter02Page', () =&gt; {
+  it('renders both stages, concept content, complexity table, and quiz', () =&gt; {
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter02Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('push / pop')).toBeInTheDocument();
+    expect(screen.getByText('enqueue / dequeue')).toBeInTheDocument();
+    expect(screen.getAllByText(/Last-In-First-Out/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('push / enqueue')).toBeInTheDocument();
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/02-stacks-queues/</code><br>Expected: PASS (4 tests total across both test files)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 6: Commit</strong></div>
+  <pre>git add src/chapters/02-stacks-queues/
+git commit -m "feat: build chapter 02 (Stacks & Queues)"</pre>
+
+  <h3>Task 4: Chapter 06 — Hash Tables</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/06-hash-tables/steps.ts</code>,
+    <code>src/chapters/06-hash-tables/BucketDiagram.tsx</code>,
+    <code>src/chapters/06-hash-tables/BucketDiagram.test.tsx</code>,
+    <code>src/chapters/06-hash-tables/Chapter06Page.tsx</code>,
+    <code>src/chapters/06-hash-tables/Chapter06Page.test.tsx</code>
+  </p>
+  <p><strong>Consumes:</strong> <code>BucketScene</code>/<code>BucketSlotState</code> from Task 1. <strong>Produces:</strong> default export <code>Chapter06Page</code>.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Write steps.ts</strong></div>
+  <pre>// src/chapters/06-hash-tables/steps.ts
+// Content sourced from "07_Hash_Tables-1038601-17884271445313.pdf": h(k) = k mod N with N=7,
+// separate-chaining insert order 76,93,40,47,10,55,62 is the PDF's own fully-worked example
+// (the linear/quadratic-probing/double-hashing slides only show blank template tables, so
+// this plan scopes the demo to chaining, per spec §1's fidelity rule).
+import type { VisualizerStep, BucketScene } from '../../types';
+
+export const HASH_CODE: string[] = [
+  'function insert(k):',
+  '  i = h(k)              // h(k) = k mod N, N = 7',
+  '  bucket[i].append(k)   // chaining on collision',
+];
+
+function bucketsAfter(placed: { key: number; index: number }[]): BucketScene['buckets'] {
+  const buckets: BucketScene['buckets'] = Array.from({ length: 7 }, (_, i) =&gt; ({ index: i, values: [], state: 'idle' as const }));
+  for (const { key, index } of placed) {
+    const b = buckets[index];
+    const collided = b.values.length &gt; 0;
+    b.values.push(String(key));
+    b.state = collided ? 'collision' : 'placed';
+  }
+  return buckets;
+}
+
+export const HASH_STEPS: (VisualizerStep &amp; { scene: BucketScene })[] = [
+  { chip: 'N = 7', lines: [1, 2], scene: { type: 'bucket', buckets: bucketsAfter([]) },
+    narr: 'แฮชด้วย **h(k) = k mod 7** ตาราง N = 7 ช่อง เริ่มต้นว่างทั้งหมด — ชนกันแล้วต่อท้ายด้วย chaining' },
+  { chip: 'insert 76', lines: [2, 3], scene: { type: 'bucket', buckets: bucketsAfter([{ key: 76, index: 6 }]) },
+    narr: '76 mod 7 = 6 → ใส่ที่ bucket 6' },
+  { chip: 'insert 93', lines: [2, 3], scene: { type: 'bucket', buckets: bucketsAfter([{ key: 76, index: 6 }, { key: 93, index: 2 }]) },
+    narr: '93 mod 7 = 2 → ใส่ที่ bucket 2' },
+  { chip: 'insert 40', lines: [2, 3], scene: { type: 'bucket', buckets: bucketsAfter([{ key: 76, index: 6 }, { key: 93, index: 2 }, { key: 40, index: 5 }]) },
+    narr: '40 mod 7 = 5 → ใส่ที่ bucket 5' },
+  { chip: 'insert 47', lines: [2, 3], pill: 'collision @ 5', scene: { type: 'bucket', buckets: bucketsAfter([{ key: 76, index: 6 }, { key: 93, index: 2 }, { key: 40, index: 5 }, { key: 47, index: 5 }]) },
+    narr: '47 mod 7 = 5 → **ชนกับ 40** ที่มีอยู่แล้ว → ต่อท้ายด้วย chaining เป็น [40, 47]' },
+  { chip: 'insert 10', lines: [2, 3], scene: { type: 'bucket', buckets: bucketsAfter([{ key: 76, index: 6 }, { key: 93, index: 2 }, { key: 40, index: 5 }, { key: 47, index: 5 }, { key: 10, index: 3 }]) },
+    narr: '10 mod 7 = 3 → ใส่ที่ bucket 3' },
+  { chip: 'insert 55', lines: [2, 3], pill: 'collision @ 6', scene: { type: 'bucket', buckets: bucketsAfter([{ key: 76, index: 6 }, { key: 93, index: 2 }, { key: 40, index: 5 }, { key: 47, index: 5 }, { key: 10, index: 3 }, { key: 55, index: 6 }]) },
+    narr: '55 mod 7 = 6 → ชนกับ 76 → chaining เป็น [76, 55]' },
+  { chip: 'insert 62', lines: [2, 3], pill: 'collision @ 6', scene: { type: 'bucket', buckets: bucketsAfter([{ key: 76, index: 6 }, { key: 93, index: 2 }, { key: 40, index: 5 }, { key: 47, index: 5 }, { key: 10, index: 3 }, { key: 55, index: 6 }, { key: 62, index: 6 }]) },
+    narr: '62 mod 7 = 6 → ชนอีกครั้งที่ bucket 6 → กลายเป็น [76, 55, 62]' },
+];</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Write BucketDiagram.tsx</strong></div>
+  <pre>// src/chapters/06-hash-tables/BucketDiagram.tsx
+import type { BucketScene, BucketSlotState } from '../../types';
+
+const SLOT_STYLE: Record&lt;BucketSlotState, { bg: string; border: string; text: string }&gt; = {
+  idle:      { bg: 'var(--tree-node-idle-fill)', border: 'var(--tree-node-idle-stroke)', text: 'var(--tree-node-idle-text)' },
+  probe:     { bg: 'var(--tree-node-walk-fill)', border: 'var(--tree-node-walk-stroke)', text: 'var(--tree-node-walk-text)' },
+  collision: { bg: 'var(--color-warning-soft)',  border: 'var(--color-warning)',         text: 'var(--color-warning)' },
+  placed:    { bg: 'var(--tree-node-ok-fill)',   border: 'var(--tree-node-ok-stroke)',   text: 'var(--tree-node-ok-text)' },
+};
+
+export const BUCKET_STATE_LEGEND: { color: string; label: string }[] = [
+  { color: SLOT_STYLE.placed.border, label: 'ใส่สำเร็จ' },
+  { color: SLOT_STYLE.collision.border, label: 'ชนกัน (chaining)' },
+  { color: SLOT_STYLE.idle.border, label: 'ว่าง' },
+];
+
+export default function BucketDiagram({ scene }: { scene: BucketScene }) {
+  return (
+    &lt;div className="grid grid-cols-7 gap-2 py-4"&gt;
+      {scene.buckets.map((b) =&gt; {
+        const st = SLOT_STYLE[b.state];
+        return (
+          &lt;div key={b.index} className="flex flex-col items-center gap-1"&gt;
+            &lt;span className="mono text-[10px]" style={{ color: 'var(--color-faint-foreground)' }}&gt;{b.index}&lt;/span&gt;
+            &lt;div
+              className="w-full min-h-[52px] rounded-lg flex flex-col items-center justify-start gap-1 p-1"
+              style={{ background: st.bg, border: `2px solid ${st.border}` }}
+            &gt;
+              {b.values.map((v, i) =&gt; (
+                &lt;span key={i} className="mono text-[12px] font-semibold" style={{ color: st.text }}&gt;{v}&lt;/span&gt;
+              ))}
+            &lt;/div&gt;
+          &lt;/div&gt;
+        );
+      })}
+    &lt;/div&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Write BucketDiagram.test.tsx and run it</strong></div>
+  <pre>// src/chapters/06-hash-tables/BucketDiagram.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import BucketDiagram from './BucketDiagram';
+import { HASH_STEPS } from './steps';
+
+describe('BucketDiagram', () =&gt; {
+  it('renders 7 buckets', () =&gt; {
+    const { container } = render(&lt;BucketDiagram scene={HASH_STEPS[0].scene} /&gt;);
+    expect(container.querySelectorAll('[class*="grid-cols-7"] &gt; div').length).toBe(7);
+  });
+  it('shows a chained bucket with both values after a collision', () =&gt; {
+    render(&lt;BucketDiagram scene={HASH_STEPS[4].scene} /&gt;);
+    expect(screen.getByText('40')).toBeInTheDocument();
+    expect(screen.getByText('47')).toBeInTheDocument();
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/06-hash-tables/BucketDiagram.test.tsx</code><br>Expected: PASS (2 tests)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Write Chapter06Page.tsx</strong></div>
+  <pre>// src/chapters/06-hash-tables/Chapter06Page.tsx
+import ChapterLayout from '../../components/layout/ChapterLayout';
+import Stage from '../../components/visualizer/Stage';
+import ConceptCard from '../../components/content/ConceptCard';
+import Quiz from '../../components/content/Quiz';
+import ChapterNav from '../../components/content/ChapterNav';
+import BucketDiagram, { BUCKET_STATE_LEGEND } from './BucketDiagram';
+import { HASH_STEPS, HASH_CODE } from './steps';
+import { getChapterBySlug, getAdjacentChapters } from '../../data/chapters';
+import type { QuizQuestion } from '../../types';
+
+const CHAPTER = getChapterBySlug('hash-tables')!;
+const { prev, next } = getAdjacentChapters('hash-tables');
+
+const CONCEPT_POINTS = [
+  'Hash table ดึงค่าด้วย index ที่คำนวณจาก key โดยตรง แทนที่จะต้องค้นหาทีละตัว — "retrieves the value using the index obtained from key without performing a search"',
+  'Hash function h แม็พแต่ละ key ไปยัง index ในช่วง [0, N-1] เช่น h(x) = x mod N เมื่อ N คือขนาดของ bucket array',
+  'เมื่อสอง key แฮชได้ index เดียวกัน (collision) วิธีจัดการมีสองแบบหลัก: separate chaining (ต่อ linked list ในช่องเดียวกัน) และ open addressing (probing หาช่องว่างถัดไป)',
+];
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'hash-calc',
+    prompt: 'ใช้ h(x) = x mod N โดย N = 7 แล้ว h(93) เท่ากับเท่าไหร่',
+    options: [
+      { id: 'a', label: '2', correct: true },
+      { id: 'b', label: '5', correct: false },
+      { id: 'c', label: '3', correct: false },
+      { id: 'd', label: '6', correct: false },
+    ],
+    explain: '93 mod 7 = 2 — ตรงกับสไลด์ Hash Functions',
+  },
+  {
+    id: 'collision-types',
+    prompt: 'ข้อใดไม่ใช่ sub-type ของ open addressing ตามสไลด์ Collision Handling',
+    options: [
+      { id: 'a', label: 'Linear probing', correct: false },
+      { id: 'b', label: 'Quadratic probing', correct: false },
+      { id: 'c', label: 'Separate chaining', correct: true },
+      { id: 'd', label: 'Double hashing', correct: false },
+    ],
+    explain: 'สไลด์แบ่งเป็น 2 หมวดหลัก: open addressing (linear/quadratic/double hashing) กับ separate chaining ซึ่งเป็นอีกหมวดแยกต่างหาก',
+  },
+  {
+    id: 'avg-time',
+    prompt: 'ใน hash table ที่ออกแบบดี operation ต่างๆ ใช้เวลาเฉลี่ยเท่าไหร่ตามสไลด์',
+    options: [
+      { id: 'a', label: 'O(log n)', correct: false },
+      { id: 'b', label: 'O(1)', correct: true },
+      { id: 'c', label: 'O(n)', correct: false },
+      { id: 'd', label: 'O(n log n)', correct: false },
+    ],
+    explain: 'ข้อความในสไลด์: "In a well-formed hash table, each of these operations take on average O(1) time."',
+  },
+];
+
+export default function Chapter06Page() {
+  return (
+    &lt;ChapterLayout chapter={CHAPTER}&gt;
+      &lt;Stage
+        operationLabel="insert (separate chaining)"
+        scopeLabel="Hash Table"
+        steps={HASH_STEPS}
+        code={HASH_CODE}
+        legend={BUCKET_STATE_LEGEND}
+        renderDiagram={(step) =&gt; (step.scene?.type === 'bucket' ? &lt;BucketDiagram scene={step.scene} /&gt; : null)}
+      /&gt;
+
+      &lt;main className="px-6 md:px-10 py-9 max-w-[860px] mx-auto"&gt;
+        &lt;p className="text-[15px] leading-[1.75] mb-9" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          {CONCEPT_POINTS[0]} {CONCEPT_POINTS[1]}
+        &lt;/p&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Concept&lt;/h2&gt;
+          &lt;ConceptCard points={CONCEPT_POINTS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Complexity&lt;/h2&gt;
+          &lt;p className="text-[13.5px]" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+            แหล่งข้อมูล (PDF) ระบุแค่ว่าในตาราง hash ที่ออกแบบดี การทำงานทุกอย่างใช้เวลา
+            <strong>เฉลี่ย O(1)</strong> เท่านั้น — ไม่ได้ให้ค่า best/worst-case แยกไว้ จึงไม่แสดงเป็นตารางเปรียบเทียบ
+          &lt;/p&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Quiz&lt;/h2&gt;
+          &lt;Quiz questions={QUIZ_QUESTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;ChapterNav prev={prev} next={next} /&gt;
+      &lt;/main&gt;
+    &lt;/ChapterLayout&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Write Chapter06Page.test.tsx and run it</strong></div>
+  <pre>// src/chapters/06-hash-tables/Chapter06Page.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import Chapter06Page from './Chapter06Page';
+
+describe('Chapter06Page', () =&gt; {
+  it('renders the stage, concept content, complexity note, and quiz', () =&gt; {
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter06Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('insert (separate chaining)')).toBeInTheDocument();
+    expect(screen.getAllByText(/without performing a search/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/เฉลี่ย O\(1\)/)).toBeInTheDocument();
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/06-hash-tables/</code><br>Expected: PASS (3 tests total)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 6: Commit</strong></div>
+  <pre>git add src/chapters/06-hash-tables/
+git commit -m "feat: build chapter 06 (Hash Tables)"</pre>
+
+  <h3>Task 5: Chapter 07 — String Matching</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/07-string-matching/steps.ts</code>,
+    <code>src/chapters/07-string-matching/MatchDiagram.tsx</code>,
+    <code>src/chapters/07-string-matching/MatchDiagram.test.tsx</code>,
+    <code>src/chapters/07-string-matching/Chapter07Page.tsx</code>,
+    <code>src/chapters/07-string-matching/Chapter07Page.test.tsx</code>
+  </p>
+  <p><strong>Consumes:</strong> <code>MatchScene</code>/<code>MatchCharState</code> from Task 1. <strong>Produces:</strong> default export <code>Chapter07Page</code>.</p>
+  <p class="note">Scope note (spec §1 disclosure): the source PDF's main content (20 of 37 slides) is KMP, Horspool, and Boyer-Moore, none of which are simple left-to-right sliding comparisons — KMP skips ahead using a prefix function, Horspool/Boyer-Moore compare right-to-left with table-driven jumps. This demo is scoped to the PDF's own naive/brute-force section (2 slides), which is genuinely a two-row sliding-window comparison, and the page text says so explicitly rather than implying it covers the whole chapter.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Write steps.ts</strong></div>
+  <pre>// src/chapters/07-string-matching/steps.ts
+// Content sourced from "06_String_Matching-1038601-17884269975673.pdf", naive-matcher trace
+// on slide 8: T = "acaabc", P = "aab". This is the PDF's only genuinely left-to-right,
+// shift-by-1 sliding comparison — see scope note in Chapter07Page.tsx.
+import type { VisualizerStep, MatchScene } from '../../types';
+
+export const MATCH_CODE: string[] = [
+  'for s in 0 .. n-m:',
+  '  for i in 0 .. m-1:',
+  '    if T[s+i] != P[i]:',
+  '      break               // mismatch: try next shift',
+  '  if i == m:',
+  '    report "match at shift s"',
+];
+
+export const MATCH_STEPS: (VisualizerStep &amp; { scene: MatchScene })[] = [
+  { chip: 's=0', lines: [1, 2], pill: 'shift=0', scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 0, charStates: { 0: 'compare' } },
+    narr: 'เทียบ T[0]=a กับ P[0]=a' },
+  { chip: 'match', lines: [2], scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 0, charStates: { 0: 'match', 1: 'compare' } },
+    narr: 'ตรงกัน (a=a) → เทียบตัวถัดไป T[1]=c กับ P[1]=a' },
+  { chip: 'mismatch', lines: [3, 4], scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 0, charStates: { 0: 'match', 1: 'mismatch' } },
+    narr: 'c ≠ a → mismatch เลื่อน pattern ไปทางขวา 1 ช่อง (s=1)' },
+  { chip: 's=1', lines: [1, 2], pill: 'shift=1', scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 1, charStates: { 0: 'compare' } },
+    narr: 'เทียบ T[1]=c กับ P[0]=a' },
+  { chip: 'mismatch', lines: [3, 4], scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 1, charStates: { 0: 'mismatch' } },
+    narr: 'c ≠ a → mismatch ทันที เลื่อนไป s=2' },
+  { chip: 's=2', lines: [1, 2], pill: 'shift=2', scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 2, charStates: { 0: 'compare' } },
+    narr: 'เทียบ T[2]=a กับ P[0]=a' },
+  { chip: 'match', lines: [2], scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 2, charStates: { 0: 'match', 1: 'compare' } },
+    narr: 'a=a ตรงกัน → เทียบ T[3]=a กับ P[1]=a' },
+  { chip: 'match', lines: [2], scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 2, charStates: { 0: 'match', 1: 'match', 2: 'compare' } },
+    narr: 'a=a ตรงกันอีก → เทียบ T[4]=b กับ P[2]=b' },
+  { chip: 'พบ pattern!', lines: [5, 6], pill: 'shift=2', scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 2, charStates: { 0: 'match', 1: 'match', 2: 'match' } },
+    narr: 'ตรงกันครบ 3 ตัว → **พบ pattern ที่ shift 2** ("Pattern occurs with shift 2")' },
+  { chip: 's=3', lines: [1, 2], pill: 'shift=3', scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 3, charStates: { 0: 'compare' } },
+    narr: 'เลื่อนต่อ เทียบ T[3]=a กับ P[0]=a' },
+  { chip: 'mismatch', lines: [3, 4], scene: { type: 'match', text: 'acaabc', pattern: 'aab', shift: 3, charStates: { 0: 'match', 1: 'mismatch' } },
+    narr: 'a=a ตรงกัน แต่ T[4]=b ≠ P[1]=a → mismatch จบการสไลด์ (s เกินขอบเขตของ T)' },
+];</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Write MatchDiagram.tsx</strong></div>
+  <pre>// src/chapters/07-string-matching/MatchDiagram.tsx
+import type { MatchScene, MatchCharState } from '../../types';
+
+const CELL = 32;
+
+const CHAR_STYLE: Record&lt;MatchCharState, { bg: string; border: string; text: string }&gt; = {
+  idle:     { bg: 'var(--tree-node-idle-fill)', border: 'var(--tree-node-idle-stroke)', text: 'var(--tree-node-idle-text)' },
+  compare:  { bg: 'var(--tree-node-here-fill)', border: 'var(--tree-node-here-stroke)', text: 'var(--tree-node-here-text)' },
+  match:    { bg: 'var(--tree-node-ok-fill)',   border: 'var(--tree-node-ok-stroke)',   text: 'var(--tree-node-ok-text)' },
+  mismatch: { bg: 'var(--color-warning-soft)',  border: 'var(--color-warning)',         text: 'var(--color-warning)' },
+};
+
+export const MATCH_STATE_LEGEND: { color: string; label: string }[] = [
+  { color: CHAR_STYLE.compare.border, label: 'กำลังเทียบ' },
+  { color: CHAR_STYLE.match.border, label: 'ตรงกัน' },
+  { color: CHAR_STYLE.mismatch.border, label: 'ไม่ตรงกัน' },
+];
+
+export default function MatchDiagram({ scene }: { scene: MatchScene }) {
+  return (
+    &lt;div className="flex flex-col gap-2 py-5 items-start"&gt;
+      &lt;div className="flex gap-1"&gt;
+        {scene.text.split('').map((ch, i) =&gt; (
+          &lt;div key={i} className="mono text-[13px] flex items-center justify-center rounded"
+            style={{ width: CELL, height: CELL, background: 'var(--tree-node-idle-fill)', border: '1px solid var(--tree-node-idle-stroke)', color: 'var(--tree-node-idle-text)' }}&gt;
+            {ch}
+          &lt;/div&gt;
+        ))}
+      &lt;/div&gt;
+      &lt;div className="flex gap-1" style={{ marginLeft: scene.shift * (CELL + 4) }}&gt;
+        {scene.pattern.split('').map((ch, i) =&gt; {
+          const st = CHAR_STYLE[scene.charStates[i] ?? 'idle'];
+          return (
+            &lt;div key={i} className="mono text-[13px] font-semibold flex items-center justify-center rounded"
+              style={{ width: CELL, height: CELL, background: st.bg, border: `2px solid ${st.border}`, color: st.text }}&gt;
+              {ch}
+            &lt;/div&gt;
+          );
+        })}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Write MatchDiagram.test.tsx and run it</strong></div>
+  <pre>// src/chapters/07-string-matching/MatchDiagram.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import MatchDiagram from './MatchDiagram';
+import { MATCH_STEPS } from './steps';
+
+describe('MatchDiagram', () =&gt; {
+  it('renders every text character', () =&gt; {
+    render(&lt;MatchDiagram scene={MATCH_STEPS[0].scene} /&gt;);
+    'acaabc'.split('').forEach((ch) =&gt; expect(screen.getAllByText(ch).length).toBeGreaterThan(0));
+  });
+  it('renders the full pattern once matched', () =&gt; {
+    render(&lt;MatchDiagram scene={MATCH_STEPS[8].scene} /&gt;);
+    expect(screen.getAllByText('a').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('b').length).toBeGreaterThan(0);
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/07-string-matching/MatchDiagram.test.tsx</code><br>Expected: PASS (2 tests)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Write Chapter07Page.tsx</strong></div>
+  <pre>// src/chapters/07-string-matching/Chapter07Page.tsx
+import ChapterLayout from '../../components/layout/ChapterLayout';
+import Stage from '../../components/visualizer/Stage';
+import ConceptCard from '../../components/content/ConceptCard';
+import Quiz from '../../components/content/Quiz';
+import ChapterNav from '../../components/content/ChapterNav';
+import MatchDiagram, { MATCH_STATE_LEGEND } from './MatchDiagram';
+import { MATCH_STEPS, MATCH_CODE } from './steps';
+import { getChapterBySlug, getAdjacentChapters } from '../../data/chapters';
+import type { QuizQuestion } from '../../types';
+
+const CHAPTER = getChapterBySlug('string-matching')!;
+const { prev, next } = getAdjacentChapters('string-matching');
+
+const CONCEPT_POINTS = [
+  'String matching หา shift s ที่ทำให้ T[s+1..s+m] เท่ากับ pattern P[1..m] ทุกตัว — naive matcher ลองทุกค่า s ตั้งแต่ 0 ถึง n-m โดยไม่ต้อง preprocess อะไรก่อน',
+  'PDF ฉบับนี้ครอบคลุมหลายอัลกอริทึม: naive, finite-automaton matcher, KMP (ใช้ prefix function π), Horspool, และ Boyer-Moore เต็มรูปแบบ — สาธิตด้านล่างจำกัดขอบเขตไว้แค่ **naive matching** เพราะเป็นแบบเดียวที่เป็นการเลื่อนเทียบทีละตัวจากซ้ายไปขวาอย่างตรงไปตรงมา',
+];
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'naive-shift',
+    prompt: 'จากตัวอย่าง naive matcher ในสไลด์ (P="aab", T="acaabc") pattern ตรงกันเต็มที่ shift เท่าไหร่',
+    options: [
+      { id: 'a', label: 's=0', correct: false },
+      { id: 'b', label: 's=1', correct: false },
+      { id: 'c', label: 's=2', correct: true },
+      { id: 'd', label: 's=3', correct: false },
+    ],
+    explain: 'ไดอะแกรมในสไลด์แสดง 4 panel (s=0..3) — ที่ s=2 ตรงกันครบ 3 ตัวอักษร',
+  },
+  {
+    id: 'kmp-prefix',
+    prompt: 'ฟังก์ชัน prefix π[q] ของ KMP หมายถึงอะไรตามนิยามในสไลด์',
+    options: [
+      { id: 'a', label: 'ขนาดของ alphabet', correct: false },
+      { id: 'b', label: 'ความยาวของ proper prefix ที่ยาวที่สุดของ P ที่เป็น suffix ของ P_q ด้วย', correct: true },
+      { id: 'c', label: 'จำนวนครั้งที่ mismatch', correct: false },
+      { id: 'd', label: 'ความยาวของ text', correct: false },
+    ],
+    explain: 'นิยามตรงจากสไลด์ที่อธิบาย prefix function ของ KMP',
+  },
+  {
+    id: 'horspool-desc',
+    prompt: 'อัลกอริทึมใดถูกอธิบายว่าเป็น "a simplified version of Boyer-Moore" ในสไลด์',
+    options: [
+      { id: 'a', label: 'Naive matcher', correct: false },
+      { id: 'b', label: 'KMP', correct: false },
+      { id: 'c', label: "Horspool's algorithm", correct: true },
+      { id: 'd', label: 'Finite automaton matcher', correct: false },
+    ],
+    explain: 'สไลด์ระบุ Horspool ว่าเป็นเวอร์ชันย่อของ Boyer-Moore ที่เลื่อนตามอักขระสุดท้ายของ pattern เทียบกับ text เสมอ',
+  },
+];
+
+export default function Chapter07Page() {
+  return (
+    &lt;ChapterLayout chapter={CHAPTER}&gt;
+      &lt;Stage
+        operationLabel="naive matching"
+        scopeLabel="String Matching"
+        steps={MATCH_STEPS}
+        code={MATCH_CODE}
+        legend={MATCH_STATE_LEGEND}
+        renderDiagram={(step) =&gt; (step.scene?.type === 'match' ? &lt;MatchDiagram scene={step.scene} /&gt; : null)}
+      /&gt;
+
+      &lt;main className="px-6 md:px-10 py-9 max-w-[860px] mx-auto"&gt;
+        &lt;p className="text-[15px] leading-[1.75] mb-9" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          {CONCEPT_POINTS[0]}
+        &lt;/p&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Concept&lt;/h2&gt;
+          &lt;ConceptCard points={CONCEPT_POINTS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Complexity&lt;/h2&gt;
+          &lt;p className="text-[13.5px]" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+            PDF ต้นฉบับไม่ได้ระบุ Big-O ไว้ชัดเจนที่จุดไหนเลย — ทุกบรรทัด running time ในสไลด์ตั้งเป็นคำถามเปิด
+            ("Running time?") ไม่มีคำตอบให้ จึงไม่แสดงเป็นตัวเลข
+          &lt;/p&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Quiz&lt;/h2&gt;
+          &lt;Quiz questions={QUIZ_QUESTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;ChapterNav prev={prev} next={next} /&gt;
+      &lt;/main&gt;
+    &lt;/ChapterLayout&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Write Chapter07Page.test.tsx and run it</strong></div>
+  <pre>// src/chapters/07-string-matching/Chapter07Page.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import Chapter07Page from './Chapter07Page';
+
+describe('Chapter07Page', () =&gt; {
+  it('renders the stage, concept content, complexity note, and quiz', () =&gt; {
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter07Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('naive matching')).toBeInTheDocument();
+    expect(screen.getAllByText(/naive matching/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Running time\?/)).toBeInTheDocument();
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/07-string-matching/</code><br>Expected: PASS (3 tests total)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 6: Commit</strong></div>
+  <pre>git add src/chapters/07-string-matching/
+git commit -m "feat: build chapter 07 (String Matching, naive-matching scope)"</pre>
+
+  <h3>Task 6: Chapter 08 — Dynamic Programming</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/08-dynamic-programming/steps.ts</code>,
+    <code>src/chapters/08-dynamic-programming/GridDiagram.tsx</code>,
+    <code>src/chapters/08-dynamic-programming/GridDiagram.test.tsx</code>,
+    <code>src/chapters/08-dynamic-programming/Chapter08Page.tsx</code>,
+    <code>src/chapters/08-dynamic-programming/Chapter08Page.test.tsx</code>
+  </p>
+  <p><strong>Consumes:</strong> <code>GridScene</code>/<code>GridCellState</code> from Task 1. <strong>Produces:</strong> default export <code>Chapter08Page</code>.</p>
+  <p class="note">Demo is the PDF's own LCS example: X = &lt;A,B,C,B,D,A,B&gt;, Y = &lt;B,D,C,A,B,A&gt; (slide 32). This plan steps through row 1 of the table cell-by-cell (covering both the match and no-match recurrence branches) then jumps to the completed 8×7 table — every value below was hand-computed from the PDF's own recurrence (slide 30) and cross-checked against the PDF's stated final answer c[7,6]=4.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Write steps.ts</strong></div>
+  <pre>// src/chapters/08-dynamic-programming/steps.ts
+// Content sourced from "06_Dynamic_Programming-838647-17875466674679.pdf", LCS section
+// (slides 30-34). X and Y and the recurrence are the PDF's own; every cell value below was
+// hand-computed from that recurrence and cross-checked against the PDF's stated c[7,6]=4.
+import type { VisualizerStep, GridScene } from '../../types';
+
+export const LCS_CODE: string[] = [
+  'if i == 0 or j == 0:',
+  '  c[i,j] = 0',
+  'elif X[i] == Y[j]:',
+  '  c[i,j] = c[i-1,j-1] + 1',
+  'else:',
+  '  c[i,j] = max(c[i,j-1], c[i-1,j])',
+];
+
+// X = A,B,C,B,D,A,B (rows 1-7); Y = B,D,C,A,B,A (cols 1-6)
+const FINAL_TABLE: (number | null)[][] = [
+  [0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 1, 1, 1],
+  [0, 1, 1, 1, 1, 2, 2],
+  [0, 1, 1, 2, 2, 2, 2],
+  [0, 1, 1, 2, 2, 3, 3],
+  [0, 1, 2, 2, 2, 3, 3],
+  [0, 1, 2, 2, 3, 3, 4],
+  [0, 1, 2, 2, 3, 4, 4],
+];
+
+function baseTable(): (number | null)[][] {
+  return [
+    [0, 0, 0, 0, 0, 0, 0],
+    [0, null, null, null, null, null, null],
+    [0, null, null, null, null, null, null],
+    [0, null, null, null, null, null, null],
+    [0, null, null, null, null, null, null],
+    [0, null, null, null, null, null, null],
+    [0, null, null, null, null, null, null],
+    [0, null, null, null, null, null, null],
+  ];
+}
+
+function withRow1(uptoCol: number): (number | null)[][] {
+  const t = baseTable();
+  for (let j = 1; j &lt;= uptoCol; j++) t[1][j] = FINAL_TABLE[1][j];
+  return t;
+}
+
+const idleState: Record&lt;string, 'idle' | 'filled'&gt; = {};
+for (let i = 0; i &lt;= 7; i++) for (let j = 0; j &lt;= 6; j++) if (i === 0 || j === 0) idleState[`${i}-${j}`] = 'filled';
+
+function finalCellState(): Record&lt;string, GridScene['cellState'][string]&gt; {
+  const out: Record&lt;string, GridScene['cellState'][string]&gt; = {};
+  for (let i = 0; i &lt;= 7; i++) for (let j = 0; j &lt;= 6; j++) out[`${i}-${j}`] = 'filled';
+  return out;
+}
+
+export const LCS_STEPS: (VisualizerStep &amp; { scene: GridScene })[] = [
+  { chip: 'ฐาน: i=0 หรือ j=0', lines: [1, 2], scene: { type: 'grid', cells: baseTable(), cellState: { ...idleState } },
+    narr: 'ถ้า i=0 หรือ j=0 แปลว่าสายหนึ่งยาว 0 ตัวอักษร ดังนั้น LCS ยาว 0 — เติมแถวบนสุดและคอลัมน์ซ้ายสุดเป็น 0 ทั้งหมด' },
+  { chip: 'X1=A, Y1=B', lines: [5, 6], scene: { type: 'grid', cells: withRow1(1), activeCell: [1, 1], sourceCells: [[0, 1], [1, 0]], cellState: { ...idleState, '1-1': 'filled' } },
+    narr: 'A ≠ B → c[1,1] = max(c[0,1], c[1,0]) = max(0, 0) = 0' },
+  { chip: 'X1=A, Y2=D', lines: [5, 6], scene: { type: 'grid', cells: withRow1(2), activeCell: [1, 2], sourceCells: [[0, 2], [1, 1]], cellState: { ...idleState, '1-1': 'filled', '1-2': 'filled' } },
+    narr: 'A ≠ D → c[1,2] = max(c[0,2], c[1,1]) = max(0, 0) = 0' },
+  { chip: 'X1=A, Y3=C', lines: [5, 6], scene: { type: 'grid', cells: withRow1(3), activeCell: [1, 3], sourceCells: [[0, 3], [1, 2]], cellState: { ...idleState, '1-1': 'filled', '1-2': 'filled', '1-3': 'filled' } },
+    narr: 'A ≠ C → c[1,3] = max(c[0,3], c[1,2]) = max(0, 0) = 0' },
+  { chip: 'X1=A, Y4=A', lines: [3, 4], scene: { type: 'grid', cells: withRow1(4), activeCell: [1, 4], sourceCells: [[0, 3]], cellState: { ...idleState, '1-1': 'filled', '1-2': 'filled', '1-3': 'filled', '1-4': 'filled' } },
+    narr: 'A = A ตรงกัน! → c[1,4] = c[0,3] + 1 = 0 + 1 = 1' },
+  { chip: 'X1=A, Y5=B', lines: [5, 6], scene: { type: 'grid', cells: withRow1(5), activeCell: [1, 5], sourceCells: [[0, 5], [1, 4]], cellState: { ...idleState, '1-1': 'filled', '1-2': 'filled', '1-3': 'filled', '1-4': 'filled', '1-5': 'filled' } },
+    narr: 'A ≠ B → c[1,5] = max(c[0,5], c[1,4]) = max(0, 1) = 1' },
+  { chip: 'X1=A, Y6=A', lines: [3, 4], scene: { type: 'grid', cells: withRow1(6), activeCell: [1, 6], sourceCells: [[0, 5]], cellState: { ...idleState, '1-1': 'filled', '1-2': 'filled', '1-3': 'filled', '1-4': 'filled', '1-5': 'filled', '1-6': 'filled' } },
+    narr: 'A = A ตรงกัน! → c[1,6] = c[0,5] + 1 = 0 + 1 = 1' },
+  { chip: 'ตารางเต็ม', lines: [], pill: 'LCS length = 4', scene: { type: 'grid', cells: FINAL_TABLE, activeCell: [7, 6], cellState: finalCellState() },
+    narr: 'เติมด้วยกฎเดียวกันไปจนครบทุกแถว (แถว 3-7 ไม่ได้ไล่ทีละช่องในสาธิตนี้) — คำตอบสุดท้าย **c[7,6] = 4** คือความยาวของ LCS' },
+];</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Write GridDiagram.tsx</strong></div>
+  <pre>// src/chapters/08-dynamic-programming/GridDiagram.tsx
+import type { GridScene, GridCellState } from '../../types';
+
+const CELL_STYLE: Record&lt;GridCellState, { bg: string; border: string; text: string }&gt; = {
+  idle:    { bg: 'var(--tree-node-idle-fill)', border: 'var(--tree-node-idle-stroke)', text: 'var(--color-faint-foreground)' },
+  filling: { bg: 'var(--tree-node-here-fill)', border: 'var(--tree-node-here-stroke)', text: 'var(--tree-node-here-text)' },
+  filled:  { bg: 'var(--tree-node-ok-fill)',   border: 'var(--tree-node-ok-stroke)',   text: 'var(--tree-node-ok-text)' },
+  source:  { bg: 'var(--tree-node-walk-fill)', border: 'var(--tree-node-walk-stroke)', text: 'var(--tree-node-walk-text)' },
+};
+
+export const GRID_STATE_LEGEND: { color: string; label: string }[] = [
+  { color: CELL_STYLE.filling.border, label: 'กำลังคำนวณ' },
+  { color: CELL_STYLE.source.border, label: 'ใช้เป็นค่าอ้างอิง' },
+  { color: CELL_STYLE.filled.border, label: 'คำนวณแล้ว' },
+];
+
+const ROW_LABELS = ['-', 'A', 'B', 'C', 'B', 'D', 'A', 'B'];
+const COL_LABELS = ['-', 'B', 'D', 'C', 'A', 'B', 'A'];
+
+export default function GridDiagram({ scene }: { scene: GridScene }) {
+  const isSource = (r: number, c: number) =&gt; (scene.sourceCells ?? []).some(([sr, sc]) =&gt; sr === r &amp;&amp; sc === c);
+  return (
+    &lt;div className="overflow-x-auto py-4"&gt;
+      &lt;table className="border-collapse mono text-[11px] mx-auto"&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th&gt;&lt;/th&gt;
+            {COL_LABELS.map((l, j) =&gt; &lt;th key={j} className="px-1.5 py-1" style={{ color: 'var(--color-faint-foreground)' }}&gt;{l}&lt;/th&gt;)}
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          {scene.cells.map((row, i) =&gt; (
+            &lt;tr key={i}&gt;
+              &lt;td className="px-1.5 py-1" style={{ color: 'var(--color-faint-foreground)' }}&gt;{ROW_LABELS[i]}&lt;/td&gt;
+              {row.map((v, j) =&gt; {
+                const active = scene.activeCell?.[0] === i &amp;&amp; scene.activeCell?.[1] === j;
+                const state: GridCellState = active ? 'filling' : isSource(i, j) ? 'source' : (scene.cellState[`${i}-${j}`] ?? 'idle');
+                const st = CELL_STYLE[state];
+                return (
+                  &lt;td key={j} className="p-0.5"&gt;
+                    &lt;div className="w-7 h-7 flex items-center justify-center rounded"
+                      style={{ background: st.bg, border: `2px solid ${st.border}`, color: st.text }}&gt;
+                      {v ?? ''}
+                    &lt;/div&gt;
+                  &lt;/td&gt;
+                );
+              })}
+            &lt;/tr&gt;
+          ))}
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+    &lt;/div&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Write GridDiagram.test.tsx and run it</strong></div>
+  <pre>// src/chapters/08-dynamic-programming/GridDiagram.test.tsx
+import { render } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import GridDiagram from './GridDiagram';
+import { LCS_STEPS } from './steps';
+
+describe('GridDiagram', () =&gt; {
+  it('renders the base row/column as 0', () =&gt; {
+    const { container } = render(&lt;GridDiagram scene={LCS_STEPS[0].scene} /&gt;);
+    const cells = Array.from(container.querySelectorAll('td div')).map((d) =&gt; d.textContent);
+    expect(cells[0]).toBe('0');
+  });
+  it('renders the final table with c[7][6] = 4', () =&gt; {
+    const { container } = render(&lt;GridDiagram scene={LCS_STEPS[7].scene} /&gt;);
+    const rows = container.querySelectorAll('tbody tr');
+    const lastRow = rows[rows.length - 1];
+    const lastCell = lastRow.querySelectorAll('td div')[6];
+    expect(lastCell.textContent).toBe('4');
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/08-dynamic-programming/GridDiagram.test.tsx</code><br>Expected: PASS (2 tests)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Write Chapter08Page.tsx</strong></div>
+  <pre>// src/chapters/08-dynamic-programming/Chapter08Page.tsx
+import ChapterLayout from '../../components/layout/ChapterLayout';
+import Stage from '../../components/visualizer/Stage';
+import ConceptCard from '../../components/content/ConceptCard';
+import ComplexityTable from '../../components/content/ComplexityTable';
+import Quiz from '../../components/content/Quiz';
+import ChapterNav from '../../components/content/ChapterNav';
+import GridDiagram, { GRID_STATE_LEGEND } from './GridDiagram';
+import { LCS_STEPS, LCS_CODE } from './steps';
+import { getChapterBySlug, getAdjacentChapters } from '../../data/chapters';
+import type { ComplexityRow, QuizQuestion } from '../../types';
+
+const CHAPTER = getChapterBySlug('dynamic-programming')!;
+const { prev, next } = getAdjacentChapters('dynamic-programming');
+
+const CONCEPT_POINTS = [
+  'Dynamic programming ใช้ได้เมื่อโจทย์มี optimal substructure และ overlapping subproblems — แก้ subproblem แต่ละตัวแค่ครั้งเดียวแล้วเก็บผลไว้ใช้ซ้ำ แทนที่จะคำนวณซ้ำแบบ recursion ธรรมดา',
+  'Longest Common Subsequence (LCS) สร้างตาราง c ขนาด (m+1)×(n+1): c[i,j]=0 ถ้า i=0 หรือ j=0, เป็น c[i-1,j-1]+1 ถ้าตัวอักษรตรงกัน, ไม่งั้นเป็น max(c[i,j-1], c[i-1,j])',
+  'เติมตารางจากซ้ายไปขวา บนลงล่าง — แต่ละช่องต้องรู้ค่าช่องด้านบน ซ้าย และทแยงบน-ซ้ายก่อนเท่านั้น',
+];
+
+const COMPLEXITY_ROWS: ComplexityRow[] = [
+  { op: 'LCS (fill table)', best: 'O(mn)', avg: 'O(mn)', worst: 'O(mn)', worstGood: true, growthPct: 70 },
+  { op: 'LCS (traceback)', best: 'O(m+n)', avg: 'O(m+n)', worst: 'O(m+n)', worstGood: true, growthPct: 30 },
+];
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'lcs-match-case',
+    prompt: 'ตามสูตร LCS ในสไลด์ ถ้า i,j &gt; 0 และ x_i = y_j แล้ว c[i,j] เท่ากับอะไร',
+    options: [
+      { id: 'a', label: 'max(c[i,j-1], c[i-1,j])', correct: false },
+      { id: 'b', label: 'c[i-1,j-1] + 1', correct: true },
+      { id: 'c', label: 'c[i-1,j] + 1', correct: false },
+      { id: 'd', label: '0', correct: false },
+    ],
+    explain: 'สไลด์ "A recursive solution to sub-problems" ระบุ c[i-1,j-1]+1 เมื่อ i,j&gt;0 และ x_i=y_j',
+  },
+  {
+    id: 'lcs-runtime',
+    prompt: 'อัลกอริทึม LCS ในสไลด์ใช้เวลาทำงานเท่าไหร่',
+    options: [
+      { id: 'a', label: 'O(m+n)', correct: false },
+      { id: 'b', label: 'O(mn)', correct: true },
+      { id: 'c', label: 'O(2^n)', correct: false },
+      { id: 'd', label: 'O(n log n)', correct: false },
+    ],
+    explain: 'สไลด์ "Compute the LCS" ระบุตรงๆ ว่า "The algorithm runs in O(mn) time"',
+  },
+  {
+    id: 'dp-technique',
+    prompt: 'สไลด์ "The General Dynamic Programming Technique" ระบุ 3 คุณสมบัติที่โจทย์ต้องมีคืออะไร',
+    options: [
+      { id: 'a', label: 'Greedy choice, matroid structure, convexity', correct: false },
+      { id: 'b', label: 'Simple subproblems, subproblem optimality, subproblem overlap', correct: true },
+      { id: 'c', label: 'Divide, conquer, combine', correct: false },
+      { id: 'd', label: 'Memoization, recursion, base case', correct: false },
+    ],
+    explain: 'ตรงตามหัวข้อสไลด์ "The General Dynamic Programming Technique"',
+  },
+];
+
+export default function Chapter08Page() {
+  return (
+    &lt;ChapterLayout chapter={CHAPTER}&gt;
+      &lt;Stage
+        operationLabel="LCS table fill"
+        scopeLabel="Dynamic Programming"
+        steps={LCS_STEPS}
+        code={LCS_CODE}
+        legend={GRID_STATE_LEGEND}
+        renderDiagram={(step) =&gt; (step.scene?.type === 'grid' ? &lt;GridDiagram scene={step.scene} /&gt; : null)}
+      /&gt;
+
+      &lt;main className="px-6 md:px-10 py-9 max-w-[860px] mx-auto"&gt;
+        &lt;p className="text-[15px] leading-[1.75] mb-9" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          {CONCEPT_POINTS[0]}
+        &lt;/p&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Concept&lt;/h2&gt;
+          &lt;ConceptCard points={CONCEPT_POINTS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Complexity&lt;/h2&gt;
+          &lt;ComplexityTable rows={COMPLEXITY_ROWS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Quiz&lt;/h2&gt;
+          &lt;Quiz questions={QUIZ_QUESTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;ChapterNav prev={prev} next={next} /&gt;
+      &lt;/main&gt;
+    &lt;/ChapterLayout&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Write Chapter08Page.test.tsx and run it</strong></div>
+  <pre>// src/chapters/08-dynamic-programming/Chapter08Page.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import Chapter08Page from './Chapter08Page';
+
+describe('Chapter08Page', () =&gt; {
+  it('renders the stage, concept content, complexity table, and quiz', () =&gt; {
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter08Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('LCS table fill')).toBeInTheDocument();
+    expect(screen.getAllByText(/optimal substructure/).length).toBeGreaterThan(0);
+    expect(screen.getByText('O(mn)')).toBeInTheDocument();
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/08-dynamic-programming/</code><br>Expected: PASS (3 tests total)</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 6: Commit</strong></div>
+  <pre>git add src/chapters/08-dynamic-programming/
+git commit -m "feat: build chapter 08 (Dynamic Programming, LCS demo)"</pre>
+
+  <h3>Task 7: Wire routes in App.tsx</h3>
+  <p class="pathline">Modify: <code>src/App.tsx</code>, <code>src/App.test.tsx</code></p>
+  <p><strong>Consumes:</strong> <code>Chapter02Page</code>/<code>Chapter06Page</code>/<code>Chapter07Page</code>/<code>Chapter08Page</code> default exports from Tasks 3-6.</p>
+  <p class="note">Behavior change, intentional: <code>App.tsx</code>'s root redirect uses <code>CHAPTERS.find(c =&gt; c.available)</code>, i.e. the earliest-in-curriculum-order available chapter — not "whichever chapter was built first." Once chapter 02 ships, it is earlier in <code>CHAPTERS</code> than chapter 03, so the root path now correctly redirects to chapter 02. This is the right behavior (default landing should follow curriculum order), so the existing test is updated to match, not preserved as a regression.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Update the failing root-redirect assertion first (TDD: see it fail on the OLD assertion before changing App.tsx)</strong></div>
+  <pre>// src/App.test.tsx — replace the whole file
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import App from './App';
+
+// HashRouter (spec §2) reads window.location.hash, so tests drive the hash, not history.pushState
+describe('App router', () =&gt; {
+  it('renders the coming-soon page for an unbuilt chapter', () =&gt; {
+    window.location.hash = '#/chapter/intro-bigo';
+    render(&lt;App /&gt;);
+    expect(screen.getByText(/กำลังจะมาเร็วๆ นี้/)).toBeInTheDocument();
+  });
+
+  it('redirects the root path to the first available chapter in curriculum order (now chapter 02)', () =&gt; {
+    window.location.hash = '#/';
+    render(&lt;App /&gt;);
+    expect(screen.getByText('push / pop')).toBeInTheDocument();
+  });
+
+  it('still serves chapter 03 directly at its own route', () =&gt; {
+    window.location.hash = '#/chapter/trees-bst';
+    render(&lt;App /&gt;);
+    expect(screen.getByText('insert(37)')).toBeInTheDocument();
+  });
+});</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Run to verify it fails (routes not wired yet)</strong></div>
+  <p>Run: <code>npx vitest run src/App.test.tsx</code><br>Expected: FAIL — no route serves <code>stacks-queues</code>/<code>hash-tables</code>/<code>string-matching</code>/<code>dynamic-programming</code> yet, so they still hit the <code>ComingSoonPage</code> catch-all.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Add the 4 routes</strong></div>
+  <pre>// src/App.tsx — replace the whole file
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { CHAPTERS } from './data/chapters';
+import ComingSoonPage from './pages/ComingSoonPage';
+import Chapter02Page from './chapters/02-stacks-queues/Chapter02Page';
+import Chapter03Page from './chapters/03-trees-bst/Chapter03Page';
+import Chapter06Page from './chapters/06-hash-tables/Chapter06Page';
+import Chapter07Page from './chapters/07-string-matching/Chapter07Page';
+import Chapter08Page from './chapters/08-dynamic-programming/Chapter08Page';
+
+export default function App() {
+  const firstAvailable = CHAPTERS.find((c) =&gt; c.available) ?? CHAPTERS[0];
+
+  // HashRouter, not BrowserRouter (spec §2): history routing breaks silently when dist/index.html
+  // is opened from disk — URLs look like index.html#/chapter/trees-bst
+  return (
+    &lt;HashRouter&gt;
+      &lt;Routes&gt;
+        &lt;Route path="/" element={&lt;Navigate to={`/chapter/${firstAvailable.slug}`} replace /&gt;} /&gt;
+        &lt;Route path="/chapter/stacks-queues" element={&lt;Chapter02Page /&gt;} /&gt;
+        &lt;Route path="/chapter/trees-bst" element={&lt;Chapter03Page /&gt;} /&gt;
+        &lt;Route path="/chapter/hash-tables" element={&lt;Chapter06Page /&gt;} /&gt;
+        &lt;Route path="/chapter/string-matching" element={&lt;Chapter07Page /&gt;} /&gt;
+        &lt;Route path="/chapter/dynamic-programming" element={&lt;Chapter08Page /&gt;} /&gt;
+        {/* :slug param (not a literal per-chapter path) so ComingSoonPage's useParams() actually
+            resolves the chapter — fixes a bug where every unavailable chapter fell back to the
+            generic label because no route declared a param for useParams() to read. */}
+        &lt;Route path="/chapter/:slug" element={&lt;ComingSoonPage /&gt;} /&gt;
+        &lt;Route path="*" element={&lt;ComingSoonPage /&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/HashRouter&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Run to verify it passes, then run the full suite</strong></div>
+  <p>Run: <code>npx vitest run</code><br>Expected: all tests pass, including chapter 03's own suite (unaffected — its route and component are untouched).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Typecheck and commit</strong></div>
+  <pre>npx tsc -b
+git add src/App.tsx src/App.test.tsx
+git commit -m "feat: wire routes for chapters 02/06/07/08, update root-redirect test"</pre>
+
+  <h3>Task 8: Production build verification</h3>
+  <p class="pathline">No files created or modified — verification only, same procedure chapter 03's Task 8 used.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Build</strong></div>
+  <pre>npm run build</pre>
+  <p>Expected: <code>tsc -b &amp;&amp; vite build</code> completes with no errors, producing a single self-contained <code>dist/index.html</code> (vite-plugin-singlefile).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Open dist/index.html directly from disk (not via `vite preview`)</strong></div>
+  <p>Open <code>com-sci-site/dist/index.html</code> as a <code>file://</code> URL in a real browser. Confirm: the sidebar shows chapters 02, 03, 06, 07, 08 as available (not "coming soon"); navigating to each renders its Stage, steps through correctly with arrow keys/play button, and the quiz answers correctly reveal correct/wrong. Confirm chapters 01, 04, 05 still show the coming-soon page with their own titles (via <code>useParams</code>, per the existing fix).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Report results</strong></div>
+  <p>No commit — this is a manual verification gate. If anything fails, fix in the relevant task above and re-run Step 1-2 before proceeding to review/ship.</p>
+
+</div>
+</body>
+</html>

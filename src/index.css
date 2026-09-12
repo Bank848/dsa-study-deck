@@ -1,0 +1,28 @@
+@import '../design-tokens/tokens.css';
+/* spec.md §7: self-hosted fonts (no CDN) — the singlefile build inlines these as data URIs */
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+@import '@fontsource/jetbrains-mono/700.css';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans-thai/400.css';
+@import '@fontsource/ibm-plex-sans-thai/500.css';
+@import '@fontsource/ibm-plex-sans-thai/600.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'IBM Plex Sans', 'IBM Plex Sans Thai', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+/* spec.md §4: keyboard focus = accent-blue focus-ring token, never the amber node-halo */
+:focus-visible { outline: none; box-shadow: var(--shadow-focus-ring); }
