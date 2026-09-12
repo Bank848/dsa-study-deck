@@ -20,10 +20,17 @@ const SLOT: Record<number, { x: number; y: number }> = {
   3: { x: 140, y: 160 }, 4: { x: 300, y: 160 }, 5: { x: 480, y: 160 }, 6: { x: 640, y: 160 },
   7: { x: 100, y: 220 }, 8: { x: 180, y: 220 }, 9: { x: 260, y: 220 },
 };
-// parent(i) -> children(i), 0-indexed: left=2i+1, right=2i+2
-const INDEX_EDGES: [number, number][] = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [3, 8], [4, 9]];
-
 const ARRAY_0 = [16, 4, 10, 14, 7, 9, 3, 2, 8, 1]; // before sift-down
+
+// parent(i) -> children(i), 0-indexed: left=2i+1, right=2i+2 — derived from ARRAY_0's length so a
+// future change to the demo array's size can't silently desync this from the actual heap shape
+const INDEX_EDGES: [number, number][] = ARRAY_0.flatMap((_, i) => {
+  const edges: [number, number][] = [];
+  if (2 * i + 1 < ARRAY_0.length) edges.push([i, 2 * i + 1]);
+  if (2 * i + 2 < ARRAY_0.length) edges.push([i, 2 * i + 2]);
+  return edges;
+});
+
 const ARRAY_1 = [16, 14, 10, 4, 7, 9, 3, 2, 8, 1]; // after swap(1,3)
 const ARRAY_2 = [16, 14, 10, 8, 7, 9, 3, 2, 4, 1]; // after swap(3,8) — matches PDF's final array
 

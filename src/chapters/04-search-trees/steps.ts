@@ -18,10 +18,15 @@ const BEFORE_POS: Record<string, { x: number; y: number }> = {
   '48': { x: 430, y: 220 }, '62': { x: 540, y: 220 }, '54': { x: 560, y: 280 },
 };
 
+// only 78, 62, 54, 88 actually move in the rotation — the rest stay put, so derive from BEFORE_POS
+// rather than re-listing all 9 nodes (a future layout tweak to an unmoved node then only needs
+// one edit, not two kept in sync by hand)
 const AFTER_POS: Record<string, { x: number; y: number }> = {
-  '44': { x: 390, y: 40 }, '17': { x: 220, y: 100 }, '62': { x: 560, y: 100 },
-  '32': { x: 260, y: 160 }, '50': { x: 480, y: 160 }, '78': { x: 660, y: 160 },
-  '48': { x: 430, y: 220 }, '54': { x: 530, y: 220 }, '88': { x: 700, y: 220 },
+  ...BEFORE_POS,
+  '62': { x: 560, y: 100 },
+  '78': { x: 660, y: 160 },
+  '54': { x: 530, y: 220 },
+  '88': { x: 700, y: 220 },
 };
 
 const BEFORE_EDGES: [string, string][] = [['44', '17'], ['44', '78'], ['17', '32'], ['78', '50'], ['78', '88'], ['50', '48'], ['50', '62']];

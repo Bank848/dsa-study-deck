@@ -52,8 +52,12 @@ export default function TreeDiagram({
     ([a, b]) => (a !== newNodeId || showNew) && (b !== newNodeId || showNew)
   );
 
+  // height tracks viewBoxHeight at the same 246/260 ratio chapter 03's original fixed size used,
+  // so a taller viewBoxHeight (e.g. chapter 04's 320) doesn't get squeezed into the old 246px box
+  const height = Math.round((246 / 260) * viewBoxHeight);
+
   return (
-    <svg width="100%" height="246" viewBox={`0 0 780 ${viewBoxHeight}`} preserveAspectRatio="xMidYMid meet">
+    <svg width="100%" height={height} viewBox={`0 0 780 ${viewBoxHeight}`} preserveAspectRatio="xMidYMid meet">
       {depthGuides.map(({ y, label }) => (
         <g key={label}>
           <line x1={108} y1={y} x2={770} y2={y} stroke="var(--color-border-subtle)" strokeWidth={1} strokeDasharray="2 6" />
