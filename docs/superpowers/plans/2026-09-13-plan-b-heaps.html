@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DSA Study Deck — Plan B: Chapter 05 (Heaps & Priority Queues) — Plan</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });</script>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --muted:#9da7b3;
+          --accent:#58a6ff; --add:#3fb950; --mod:#d29922; --del:#f85149; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; padding:32px 24px 96px; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  h2 { font-size:21px; margin:40px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  h3 { font-size:17px; margin:24px 0 8px; }
+  .tag { display:inline-block; font-size:12px; color:var(--muted); border:1px solid var(--border);
+         border-radius:999px; padding:2px 10px; margin-right:6px; }
+  .meta { color:var(--muted); margin:8px 0 0; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin:14px 0; }
+  .warn { background:rgba(210,153,34,0.1); border:1px solid var(--mod); border-radius:10px; padding:14px 16px; margin:14px 0; }
+  .ba { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .ba > figure { margin:0; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px; }
+  .ba figcaption { font-weight:600; margin-bottom:8px; color:var(--muted); }
+  .ba .before figcaption::before { content:"◀ BEFORE  "; color:var(--del); }
+  .ba .after  figcaption::before { content:"AFTER ▶  ";  color:var(--add); }
+  @media (max-width:820px){ .ba { grid-template-columns:1fr; } }
+  .mermaid { background:#0b0f14; border-radius:8px; padding:10px; overflow:auto; }
+  .changes li { list-style:none; margin:4px 0; }
+  .changes .add::before { content:"+ "; color:var(--add); font-weight:700; }
+  .changes .mod::before { content:"~ "; color:var(--mod); font-weight:700; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+  pre { background:#0b0f14; border:1px solid var(--border); border-radius:8px; padding:12px 14px; overflow:auto; font-size:13px; }
+  code:not(pre code){ background:#0b0f14; border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .step { margin:6px 0; }
+  .pathline { color:var(--muted); font-size:13px; }
+  hr.section { border:0; border-top:2px dashed var(--border); margin:48px 0; }
+  .note { color:var(--muted); font-size:13px; }
+  table.batch { border-collapse:collapse; width:100%; }
+  table.batch td, table.batch th { border:1px solid var(--border); padding:6px 10px; text-align:left; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>DSA Study Deck — Plan B: Chapter 05 (Heaps &amp; Priority Queues)</h1>
+  <p class="meta">
+    <span class="tag">2026-09-13</span>
+    <span class="tag">plan-pro</span>
+    <span class="tag">Plan B of 4</span>
+    <span class="tag">React 18</span>
+    <span class="tag">TypeScript</span>
+    <span class="tag">Vitest</span>
+  </p>
+
+  <h2>📖 Read this first</h2>
+
+  <div class="card">
+    <strong>Goal.</strong> Build chapter 05 (Heaps &amp; Priority Queues): a step-through
+    sift-down (Max-Heapify) demo shown as a tree view and an array view side by side for the
+    same step, using the source PDF's own fully-worked example.
+    <br><br>
+    <strong>Key decision 1 — dual view, simpler than the spec's own two options.</strong> The
+    design spec offered two ways to pair a tree view with an array view for the same step: two
+    separate <code>&lt;Stage&gt;</code> instances reading the same steps array with two
+    <code>renderDiagram</code> closures, or one <code>&lt;Stage&gt;</code> whose
+    <code>renderDiagram</code> returns a two-column fragment. This plan uses the second one, which
+    the spec didn't fully spell out but is strictly simpler than both spec options: a single
+    <code>&lt;Stage&gt;</code> means one set of step chips, one code panel, one narration line —
+    the tree and array can never desync the way two independently-steppable Stage instances could.
+    <br><br>
+    <strong>Key decision 2 — no <code>ArrayScene</code> added to <code>types.ts</code>.</strong>
+    The spec sketched an <code>ArrayScene</code> member for <code>Scene</code>, but the array view
+    here never goes through <code>Stage</code>'s <code>scene</code>-typed field at all (both
+    diagrams render from one <code>renderDiagram</code> closure, not two independent
+    scene-driven ones) — so a new <code>ArrayScene</code> Scene-union member would be dead weight.
+    This is a deliberate deviation from spec §4's stated plan shape ("dual-view (TreeScene + new
+    ArrayScene)") found while authoring this plan, not an oversight — noted here so anyone diffing
+    the spec against shipped code later isn't confused by the missing type.
+    Instead, each step carries a plain non-<code>Scene</code> <code>array: number[]</code> and
+    <code>arrayStates: Record&lt;number, NodeState&gt;</code> field alongside its normal
+    <code>scene: TreeScene</code>. Since <code>Stage</code>'s <code>renderDiagram</code> prop is
+    typed as <code>(step: VisualizerStep, index: number) =&gt; ReactNode</code>, it doesn't know
+    about these extra fields — the single closure narrows with an explicit
+    <code>as (typeof HEAP_STEPS)[number]</code> cast to read them, same pattern used anywhere a
+    step needs to carry more than the generic step shape.
+    <br><br>
+    <strong>Key decision 3 — heap structure never changes, so no rotation-style edge/position
+    animation is needed; positions/edges swap between exactly three fixed snapshots.</strong>
+    A sift-down never changes which array index is whose parent/child — it only changes which
+    <em>value</em> sits at which index. Modeling tree nodes by value (not by index) turns each
+    swap into the same "before/after positions+edgeList swap" mechanism chapter 04's rotation
+    already uses (<code>scene.positions</code> + <code>scene.edgeList</code>), reusing chapter
+    03/04's <code>TreeDiagram</code> completely unchanged — no third generalization pass needed.
+    <br><br>
+    <strong>Cross-plan dependency.</strong> This plan reuses <code>TreeDiagram</code>'s generalized
+    props (<code>nodePositions</code>/<code>baseEdges</code>/<code>scene.positions</code>/
+    <code>scene.edgeList</code>) from Plan D. <strong>Task 1 below checks whether Plan D has
+    already landed</strong> (grep <code>src/types.ts</code> for <code>TreeScene.positions</code>)
+    — if yes, it's a no-op; if Plan D hasn't executed yet, Task 1 performs the identical
+    generalization Plan D's own Task 1 does, so this plan is self-sufficient either way.
+  </div>
+
+  <h3>Before → After</h3>
+  <div class="ba">
+    <figure class="before"><figcaption>Today (chapter 05 unbuilt)</figcaption>
+      <div class="mermaid">
+flowchart TB
+  CH["chapters.ts: heaps-pq<br/>available: false"]
+      </div>
+    </figure>
+    <figure class="after"><figcaption>After this plan</figcaption>
+      <div class="mermaid">
+flowchart TB
+  ST["Chapter05Page: one Stage<br/>renderDiagram returns 2-column fragment"]
+  TD["TreeDiagram (reused, unchanged)<br/>tree view: value-nodes swap position+edges"] --> ST
+  HA["HeapArrayDiagram (new)<br/>array view: 10 index cells, current values"] --> ST
+      </div>
+    </figure>
+  </div>
+
+  <h3>What's changing</h3>
+  <ul class="changes">
+    <li class="mod"><code>src/chapters/03-trees-bst/TreeDiagram.tsx</code> — only if Plan D hasn't landed yet (Task 1 checks first)</li>
+    <li class="mod"><code>src/data/chapters.ts</code> — flip <code>available: true</code> for <code>heaps-pq</code> (its source PDF is already tracked from the scaffold commit, nothing to add there)</li>
+    <li class="add"><code>src/chapters/05-heaps-pq/{steps.ts,HeapArrayDiagram.tsx,Chapter05Page.tsx}</code> + tests</li>
+    <li class="mod"><code>src/App.tsx</code>, <code>src/App.test.tsx</code> — new route</li>
+  </ul>
+  <p class="note"><strong>Depends on an already-shipped component (not part of this plan's own file list):</strong> Task 3's <code>Chapter05Page.tsx</code> imports <code>src/components/content/LessonExplainer.tsx</code>, which landed separately in commit <code>844dbd5a</code> ("add LessonExplainer detailed-teaching section") — grep for that file before starting Task 3; if it's missing, copy its ~15-line implementation from chapter 02 or 03's own commit.</p>
+
+  <h3>Parallelization analysis</h3>
+  <table class="batch">
+    <tr><th>Batch</th><th>Tasks</th><th>Why</th></tr>
+    <tr><td>1</td><td>Task 1 (verify/apply TreeDiagram generalization)</td><td>Everything else depends on it being in place — alone</td></tr>
+    <tr><td>2</td><td>Task 2 (chapters.ts + PDF) and Task 3 (chapter 05 content) in parallel</td><td>Disjoint files</td></tr>
+    <tr><td>3</td><td>Task 4 (App.tsx wiring)</td><td>Needs Task 3's page — alone</td></tr>
+    <tr><td>4</td><td>Task 5 (build verification)</td><td>Last</td></tr>
+  </table>
+  <p class="note">Critical path: Task 1 → {2, 3 in parallel} → Task 4 → Task 5.</p>
+
+  <div class="warn">
+    <strong>Cross-plan sequencing note:</strong> Plan D (chapter 04, search trees) also generalizes
+    <code>TreeDiagram.tsx</code>. If Plan D executes <strong>before</strong> this plan, Task 1 here
+    is a no-op verification step. If this plan executes first, Task 1 performs Plan D's exact
+    generalization itself so Plan D's own Task 1 finds nothing left to do (it should verify first,
+    same as this plan does) — whichever merges first is the source of truth for
+    <code>TreeDiagram.tsx</code>'s final shape; if both land with divergent implementations, resolve
+    by keeping whichever one is already merged and rebasing the other's callers onto it.
+  </div>
+
+  <hr class="section" />
+
+  <h2>🔧 Implementation plan</h2>
+
+  <div class="card">
+    <p><strong>Goal:</strong> Build chapter 05's sift-down demo as a single step-through with a tree view and an array view of the same array, side by side.</p>
+    <p><strong>Architecture:</strong> One <code>&lt;Stage&gt;</code>, one steps array carrying both a <code>TreeScene</code> and plain array-view fields per step; <code>renderDiagram</code> renders both diagrams from the one closure.</p>
+    <p><strong>Tech Stack:</strong> React 18, TypeScript, Vite, Tailwind, Vitest + Testing Library.</p>
+    <p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-09-13-remaining-chapters-design.md</code> (§2.1 ArrayScene sketch — not used, see Key decision 2 above; §3 heaps row)</p>
+  </div>
+
+  <h3>Global Constraints</h3>
+  <ul>
+    <li>No new design tokens — the array view reuses <code>--tree-node-{idle,walk,here,ok}-{fill,stroke,text}</code>, the same vocabulary <code>TreeDiagram</code> already uses.</li>
+    <li>Content must trace to the PDF (spec §1) — the sift-down trace, index formulas, and the "running time not stated" complexity note all come from the source's own worked example and formula slides.</li>
+    <li>Chapter 03/04's own rendered output must be unaffected by anything Task 1 does here (same constraint Plan D states for its own Task 1).</li>
+  </ul>
+
+  <h3>Task 1: Verify (or apply) TreeDiagram's multi-chapter generalization</h3>
+  <p class="pathline">Modify (conditionally): <code>src/chapters/03-trees-bst/TreeDiagram.tsx</code>, <code>src/types.ts</code>, <code>src/chapters/03-trees-bst/steps.ts</code>, <code>src/chapters/03-trees-bst/Chapter03Page.tsx</code>, <code>src/chapters/03-trees-bst/TreeDiagram.test.tsx</code></p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Check whether Plan D already landed</strong></div>
+  <pre>grep -n "positions" src/types.ts</pre>
+  <p>If this prints a line like <code>  positions?: Record&lt;string, { x: number; y: number }&gt;;</code> (indented inside the <code>TreeScene</code> interface — the grep won't show "TreeScene." literally, just the field itself), Plan D has already landed — <strong>skip straight to Task 2</strong>, nothing else in this task applies. If it prints nothing, continue with Step 2 below.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Apply the same generalization Plan D's Task 1 performs</strong></div>
+  <p>This is the identical refactor documented in
+    <code>docs/superpowers/plans/2026-09-13-plan-d-search-trees.html</code>'s own Task 1 (Steps 1
+    through 8: add <code>TreeScene.positions</code>/<code>edgeList</code>, fix
+    <code>BST_BASE_EDGES</code> to include the <code>42-37</code> edge, rewrite
+    <code>TreeDiagram.tsx</code> to take <code>nodePositions</code>/<code>baseEdges</code>/
+    <code>newNodeId</code>/<code>depthGuides</code>/<code>badgeLabel</code>/<code>viewBoxHeight</code>
+    as props, add <code>BST_DEPTH_GUIDES</code>, update <code>Chapter03Page.tsx</code> and
+    <code>TreeDiagram.test.tsx</code> to pass the new props explicitly). Open that file and follow
+    its Task 1 verbatim — do not re-derive it from scratch, the exact code blocks are already
+    written and reviewed there. Run its same verification commands
+    (<code>npx vitest run src/chapters/03-trees-bst/</code>, <code>npx vitest run</code>,
+    <code>npx tsc -b</code>) and commit with the same message it uses.</p>
+  <p class="note">Whichever of Plan B/D actually performs this step first is fine — both produce the
+    identical end state, so there is nothing to reconcile beyond normal merge conflict resolution
+    if both land in the same window without either checking first.</p>
+
+  <h3>Task 2: Wire chapters.ts (its source PDF is already committed)</h3>
+  <p class="pathline">Modify: <code>src/data/chapters.ts</code></p>
+  <p class="note"><strong>Correction found by review:</strong> <code>public/pdf/08_Heaps_PriorityQueues_DisjointSets-1038601-17884272948501.pdf</code> is <strong>already tracked</strong> in this repo — it was committed project-wide at the scaffold commit <code>755dcd57</code>, byte-identical to the source file. There is nothing to copy; verify it's there (<code>git ls-files public/pdf/ | grep Heaps</code>) and move straight to flipping <code>available</code>.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Flip available, run suite, commit</strong></div>
+  <pre>git ls-files public/pdf/ | grep Heaps   # confirm it's already there — expect one match
+# src/data/chapters.ts — change id '05' heaps-pq's `available: false` to `available: true`
+npx vitest run
+git add src/data/chapters.ts
+git commit -m "feat: enable chapter 05"</pre>
+
+  <h3>Task 3: Chapter 05 — Heaps &amp; Priority Queues (sift-down demo)</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/05-heaps-pq/steps.ts</code>,
+    <code>src/chapters/05-heaps-pq/HeapArrayDiagram.tsx</code>,
+    <code>src/chapters/05-heaps-pq/Chapter05Page.tsx</code>,
+    <code>src/chapters/05-heaps-pq/Chapter05Page.test.tsx</code>,
+    <code>src/chapters/05-heaps-pq/HeapArrayDiagram.test.tsx</code>
+  </p>
+  <p class="note">Demo: the PDF's own Max-Heapify/sift-down worked example, translated from the
+    source's 1-indexed convention (root = <code>A[1]</code>, <code>PARENT(i)=⌊i/2⌋</code>,
+    <code>LEFT(i)=2i</code>, <code>RIGHT(i)=2i+1</code>) to this codebase's 0-indexed arrays
+    (<code>parent(i)=⌊(i-1)/2⌋</code>, <code>left(i)=2i+1</code>, <code>right(i)=2i+2</code>) — the
+    translated trace was independently re-simulated and its final array matches the PDF's own
+    stated result exactly: starting array <code>[16,4,10,14,7,9,3,2,8,1]</code>, sift-down from
+    index 1 (value 4) performs two swaps (index 1↔3, then index 3↔8) and ends at
+    <code>[16,14,10,8,7,9,3,2,4,1]</code>. The PDF states no Big-O bound anywhere in this chapter's
+    slides for either operation shown here — the complexity section says so explicitly rather than
+    stating a number (per spec §1's fidelity rule); it does give the array/tree index formulas
+    verbatim, which is what the quiz questions below test.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Write steps.ts</strong></div>
+  <pre>// src/chapters/05-heaps-pq/steps.ts
+// Sift-down (Max-Heapify) worked example from "08_Heaps_PriorityQueues_DisjointSets...pdf",
+// translated from the PDF's 1-indexed convention to this codebase's 0-indexed arrays (see note
+// above) — the two swaps and final array were independently re-simulated and match the PDF exactly.
+import type { VisualizerStep, TreeScene, NodeState } from '../../types';
+
+export const HEAP_CODE: string[] = [
+  'maxHeapify(A, i):',
+  '  l = 2*i + 1; r = 2*i + 2       // 0-indexed children',
+  '  largest = i',
+  '  if l &lt; A.length and A[l] &gt; A[largest]: largest = l',
+  '  if r &lt; A.length and A[r] &gt; A[largest]: largest = r',
+  '  if largest != i: swap(A[i], A[largest]); maxHeapify(A, largest)',
+];
+
+// Fixed index->slot layout (heap shape never changes; only which value sits where does).
+// Indices 0..9 laid out by depth: 0 | 1,2 | 3,4,5,6 | 7,8,9
+const SLOT: Record&lt;number, { x: number; y: number }&gt; = {
+  0: { x: 390, y: 40 },
+  1: { x: 220, y: 100 }, 2: { x: 560, y: 100 },
+  3: { x: 140, y: 160 }, 4: { x: 300, y: 160 }, 5: { x: 480, y: 160 }, 6: { x: 640, y: 160 },
+  7: { x: 100, y: 220 }, 8: { x: 180, y: 220 }, 9: { x: 260, y: 220 },
+};
+// parent(i) -> children(i), 0-indexed: left=2i+1, right=2i+2
+const INDEX_EDGES: [number, number][] = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [3, 8], [4, 9]];
+
+const ARRAY_0 = [16, 4, 10, 14, 7, 9, 3, 2, 8, 1]; // before sift-down
+const ARRAY_1 = [16, 14, 10, 4, 7, 9, 3, 2, 8, 1]; // after swap(1,3)
+const ARRAY_2 = [16, 14, 10, 8, 7, 9, 3, 2, 4, 1]; // after swap(3,8) — matches PDF's final array
+
+// NOTE: keys tree nodes by String(value), not by index — this only works because ARRAY_0/1/2
+// contain 10 distinct values. A future edit introducing a duplicate value would silently collapse
+// two nodes into one on the diagram; keep the dataset distinct if this steps.ts is ever changed.
+function positionsFor(arr: number[]): Record&lt;string, { x: number; y: number }&gt; {
+  const out: Record&lt;string, { x: number; y: number }&gt; = {};
+  arr.forEach((value, index) =&gt; { out[String(value)] = SLOT[index]; });
+  return out;
+}
+function edgesFor(arr: number[]): [string, string][] {
+  return INDEX_EDGES.map(([pi, ci]) =&gt; [String(arr[pi]), String(arr[ci])]);
+}
+
+export const HEAP_NODE_POS = positionsFor(ARRAY_0);
+export const HEAP_BASE_EDGES = edgesFor(ARRAY_0);
+
+const allIdle = (arr: number[]): Record&lt;string, NodeState&gt; =&gt;
+  Object.fromEntries(arr.map((v) =&gt; [String(v), 'idle'])) as Record&lt;string, NodeState&gt;;
+
+function heapNodes(arr: number[], overrides: Record&lt;number, NodeState&gt;): Record&lt;string, NodeState&gt; {
+  const nodes = allIdle(arr);
+  for (const [idx, state] of Object.entries(overrides)) nodes[String(arr[Number(idx)])] = state;
+  return nodes;
+}
+export const HEAP_STEPS: (VisualizerStep &amp; { scene: TreeScene; array: number[]; arrayStates: Record&lt;number, NodeState&gt; })[] = [
+  {
+    chip: 'เริ่มต้น', lines: [0], array: ARRAY_0, arrayStates: { 1: 'here' },
+    scene: { type: 'tree', nodes: heapNodes(ARRAY_0, { 1: 'here' }), positions: positionsFor(ARRAY_0), edgeList: edgesFor(ARRAY_0) },
+    narr: 'maxHeapify(A, 1) — ดัชนี 1 (ค่า 4) อาจละเมิด heap property ถ้าลูกของมันมีค่ามากกว่า',
+  },
+  {
+    chip: 'เทียบกับลูกทั้งสอง', lines: [1, 2, 3, 4], array: ARRAY_0, arrayStates: { 1: 'here', 3: 'walk', 4: 'walk' },
+    scene: { type: 'tree', nodes: heapNodes(ARRAY_0, { 1: 'here', 3: 'walk', 4: 'walk' }), positions: positionsFor(ARRAY_0), edgeList: edgesFor(ARRAY_0) },
+    narr: 'ลูกซ้าย A[3]=14, ลูกขวา A[4]=7 — 14 &gt; 4 และ 14 &gt; 7 ดังนั้น largest = 3 (ลูกซ้าย)',
+  },
+  {
+    chip: 'สลับ 4 กับ 14', lines: [5], array: ARRAY_1, arrayStates: { 1: 'ok', 3: 'walk' },
+    scene: { type: 'tree', nodes: heapNodes(ARRAY_1, { 1: 'ok', 3: 'walk' }), positions: positionsFor(ARRAY_1), edgeList: edgesFor(ARRAY_1) },
+    narr: 'largest != i (3 != 1) — สลับ A[1] กับ A[3] แล้วเรียก maxHeapify(A, 3) ต่อ',
+  },
+  {
+    chip: 'เทียบรอบถัดไป', lines: [1, 2, 3, 4], array: ARRAY_1, arrayStates: { 3: 'here', 7: 'walk', 8: 'walk' },
+    scene: { type: 'tree', nodes: heapNodes(ARRAY_1, { 3: 'here', 7: 'walk', 8: 'walk' }), positions: positionsFor(ARRAY_1), edgeList: edgesFor(ARRAY_1) },
+    narr: 'ที่ดัชนี 3 (ค่า 4): ลูกซ้าย A[7]=2, ลูกขวา A[8]=8 — 8 &gt; 4 และ 8 &gt; 2 ดังนั้น largest = 8 (ลูกขวา)',
+  },
+  {
+    chip: 'สลับ 4 กับ 8', lines: [5], array: ARRAY_2, arrayStates: { 3: 'ok', 8: 'walk' },
+    scene: { type: 'tree', nodes: heapNodes(ARRAY_2, { 3: 'ok', 8: 'walk' }), positions: positionsFor(ARRAY_2), edgeList: edgesFor(ARRAY_2) },
+    narr: 'สลับ A[3] กับ A[8] แล้วเรียก maxHeapify(A, 8) ต่อ — ดัชนี 8 ไม่มีลูก (2*8+1=17 เกินขอบเขต) จบการเรียกซ้ำ',
+  },
+  {
+    chip: 'heap property คืนสภาพ', lines: [], array: ARRAY_2, arrayStates: {},
+    scene: { type: 'tree', nodes: heapNodes(ARRAY_2, {}), positions: positionsFor(ARRAY_2), edgeList: edgesFor(ARRAY_2) },
+    narr: 'ผลลัพธ์สุดท้าย [16,14,10,8,7,9,3,2,4,1] ตรงกับตัวอย่างในสไลด์ทุกตำแหน่ง',
+  },
+];</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Write HeapArrayDiagram.tsx</strong></div>
+  <pre>// src/chapters/05-heaps-pq/HeapArrayDiagram.tsx
+import type { NodeState } from '../../types';
+
+const CELL_STYLE: Record&lt;NodeState, { fill: string; stroke: string; text: string }&gt; = {
+  idle: { fill: 'var(--tree-node-idle-fill)', stroke: 'var(--tree-node-idle-stroke)', text: 'var(--tree-node-idle-text)' },
+  walk: { fill: 'var(--tree-node-walk-fill)', stroke: 'var(--tree-node-walk-stroke)', text: 'var(--tree-node-walk-text)' },
+  here: { fill: 'var(--tree-node-here-fill)', stroke: 'var(--tree-node-here-stroke)', text: 'var(--tree-node-here-text)' },
+  slot: { fill: 'var(--tree-node-slot-fill)', stroke: 'var(--tree-node-slot-stroke)', text: 'var(--tree-node-slot-text)' },
+  fresh: { fill: 'var(--tree-node-fresh-fill)', stroke: 'var(--tree-node-fresh-stroke)', text: 'var(--tree-node-fresh-text)' },
+  ok: { fill: 'var(--tree-node-ok-fill)', stroke: 'var(--tree-node-ok-stroke)', text: 'var(--tree-node-ok-text)' },
+};
+
+export interface HeapArrayDiagramProps {
+  values: number[];
+  states: Record&lt;number, NodeState&gt;;
+}
+
+export default function HeapArrayDiagram({ values, states }: HeapArrayDiagramProps) {
+  return (
+    &lt;div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}&gt;
+      {values.map((v, i) =&gt; {
+        const st = CELL_STYLE[states[i] ?? 'idle'];
+        return (
+          &lt;div key={i} style={{ textAlign: 'center' }}&gt;
+            &lt;div
+              data-testid={`heap-cell-value-${i}`}
+              style={{
+                width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'JetBrains Mono', fontSize: 14, borderRadius: 6, border: `2px solid ${st.stroke}`,
+                background: st.fill, color: st.text, transition: 'background 300ms ease, border-color 300ms ease',
+              }}
+            &gt;
+              {v}
+            &lt;/div&gt;
+            &lt;div style={{ fontSize: 10, marginTop: 2, color: 'var(--color-faint-foreground)', fontFamily: 'JetBrains Mono' }}&gt;{i}&lt;/div&gt;
+          &lt;/div&gt;
+        );
+      })}
+    &lt;/div&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Write HeapArrayDiagram.test.tsx and run it</strong></div>
+  <pre>// src/chapters/05-heaps-pq/HeapArrayDiagram.test.tsx
+import { render } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import HeapArrayDiagram from './HeapArrayDiagram';
+
+describe('HeapArrayDiagram', () =&gt; {
+  it('renders one cell per array value with its index label', () =&gt; {
+    const { getByText } = render(&lt;HeapArrayDiagram values={[16, 4, 10]} states={{}} /&gt;);
+    expect(getByText('16')).toBeInTheDocument();
+    expect(getByText('4')).toBeInTheDocument();
+    expect(getByText('10')).toBeInTheDocument();
+    expect(getByText('2')).toBeInTheDocument(); // index label for the 3rd cell
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/05-heaps-pq/HeapArrayDiagram.test.tsx</code> — expect PASS.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Write Chapter05Page.tsx</strong></div>
+  <pre>// src/chapters/05-heaps-pq/Chapter05Page.tsx
+import ChapterLayout from '../../components/layout/ChapterLayout';
+import Stage from '../../components/visualizer/Stage';
+import ConceptCard from '../../components/content/ConceptCard';
+import LessonExplainer, { type LessonSection } from '../../components/content/LessonExplainer';
+import Quiz from '../../components/content/Quiz';
+import ChapterNav from '../../components/content/ChapterNav';
+import TreeDiagram, { NODE_STATE_LEGEND } from '../03-trees-bst/TreeDiagram';
+import HeapArrayDiagram from './HeapArrayDiagram';
+import { HEAP_STEPS, HEAP_CODE, HEAP_NODE_POS, HEAP_BASE_EDGES } from './steps';
+import { getChapterBySlug, getAdjacentChapters } from '../../data/chapters';
+import type { QuizQuestion } from '../../types';
+
+const CHAPTER = getChapterBySlug('heaps-pq')!;
+const { prev, next } = getAdjacentChapters('heaps-pq');
+
+const LESSON_SECTIONS: LessonSection[] = [
+  {
+    title: 'binary heap คืออะไร ทำไมเก็บใน array ธรรมดาได้',
+    body: 'binary heap คือ complete binary tree ที่เก็บอยู่ในอาเรย์ตรงๆ ไม่ต้องมี pointer ชี้ลูก/พ่อเลย เพราะตำแหน่งของทุก node คำนวณได้จากดัชนีในอาเรย์อย่างเดียว — สไลด์ให้สูตรแบบ 1-indexed ที่ root อยู่ที่ A[1]: parent(i)=floor(i/2), left(i)=2i, right(i)=2i+1 (โค้ดในเดโมนี้แปลงเป็น 0-indexed ให้ตรงกับภาษาที่ใช้จริง: parent(i)=floor((i-1)/2), left(i)=2i+1, right(i)=2i+2) "complete" หมายความว่าทุกชั้นเต็มยกเว้นชั้นล่างสุดที่อาจเติมจากซ้ายไปขวาไม่ครบ ทำให้ไม่มีช่องว่างกลางอาเรย์เลย',
+  },
+  {
+    title: 'max-heap property คืออะไร',
+    body: 'max-heap property บังคับว่า node พ่อต้องมีค่ามากกว่าหรือเท่ากับลูกทุกตัวเสมอ ทุกชั้นในทรี — ผลที่ตามมาคือค่ามากที่สุดในฮีปทั้งหมดต้องอยู่ที่ root เสมอ (ตำแหน่งดัชนี 0) นี่คือเหตุผลที่ heap ถูกใช้ทำ priority queue: หยิบค่าสูงสุดออกได้ในเวลาคงที่โดยแค่ดูที่ root แต่หลังจากหยิบออกไปแล้ว โครงสร้างจะเสีย heap property ชั่วคราว ต้องมีขั้นตอนซ่อมกลับมา ซึ่งก็คือ maxHeapify ที่สาธิตในเดโมด้านบนนี่เอง',
+  },
+  {
+    title: 'maxHeapify (sift-down) ทำงานอย่างไร',
+    body: 'maxHeapify(A, i) รับดัชนี i ที่ "สงสัยว่าอาจละเมิด" heap property แล้วไล่แก้ลงไปทีละชั้น: เทียบค่า A[i] กับลูกทั้งสอง (ถ้ามี) หาตัวที่มากที่สุดในสาม — ถ้า A[i] มากสุดอยู่แล้วก็จบเลย แต่ถ้าลูกตัวใดมากกว่า ให้สลับ A[i] กับลูกตัวนั้น แล้วเรียก maxHeapify ซ้ำที่ตำแหน่งใหม่ของค่าที่เพิ่งถูกสลับลงไป ทำแบบนี้ไปเรื่อยๆ จนกว่าค่านั้นจะอยู่ในตำแหน่งที่ไม่ละเมิด heap property อีก หรือจนกว่าจะไม่มีลูกเหลือให้เทียบ — เดโมด้านบนแสดงตัวอย่างจากสไลด์ที่ต้องสลับสองครั้งกว่าจะจบ (ดัชนี 1↔3 แล้ว 3↔8)',
+  },
+];
+
+const CONCEPT_POINTS = [
+  'binary heap เก็บใน array ธรรมดา — สำหรับดัชนี 0-indexed: parent(i) = floor((i-1)/2), left(i) = 2i+1, right(i) = 2i+2 (ต้นฉบับสไลด์เขียนแบบ 1-indexed: PARENT(i)=floor(i/2), LEFT(i)=2i, RIGHT(i)=2i+1, root=A[1] — สลับกันแค่จุดเริ่มนับ)',
+  'max-heap property: ทุก node มีค่ามากกว่าหรือเท่ากับลูกของมันเสมอ — root จึงเป็นค่ามากที่สุดในฮีปเสมอ',
+  'maxHeapify(A, i) ("sift-down") ดันค่าที่ดัชนี i ลงไปยังตำแหน่งที่ถูกต้อง โดยสลับกับลูกที่มีค่ามากกว่าซ้ำไปเรื่อยๆ จนกว่า heap property จะกลับมาจริง',
+];
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'heap-parent-formula',
+    prompt: 'ตามสูตรของสไลด์ (1-indexed, root = A[1]) ลูกซ้ายของ node ที่ดัชนี i คือดัชนีใด',
+    options: [
+      { id: 'a', label: 'i - 1', correct: false },
+      { id: 'b', label: '2i', correct: true },
+      { id: 'c', label: '2i + 1', correct: false },
+      { id: 'd', label: 'floor(i/2)', correct: false },
+    ],
+    explain: 'สไลด์ระบุ LEFT(i) = 2i ในรูปแบบ 1-indexed ที่ root อยู่ที่ A[1]',
+  },
+  {
+    id: 'heap-max-property',
+    prompt: 'ใน max-heap ค่าที่มากที่สุดในทั้งฮีปอยู่ที่ตำแหน่งใดเสมอ',
+    options: [
+      { id: 'a', label: 'ใบสุดท้ายทางขวา', correct: false },
+      { id: 'b', label: 'root', correct: true },
+      { id: 'c', label: 'ที่ไหนก็ได้ ไม่แน่นอน', correct: false },
+      { id: 'd', label: 'ใบซ้ายสุด', correct: false },
+    ],
+    explain: 'max-heap property บังคับว่า parent &gt;= ลูกเสมอ ดังนั้น root ต้องมากที่สุด',
+  },
+  {
+    id: 'heap-siftdown-swap-count',
+    prompt: 'ในตัวอย่าง maxHeapify ของสไลด์ที่สอนในบทนี้ ต้องสลับค่ากี่ครั้งกว่าจะจบ',
+    options: [
+      { id: 'a', label: '1 ครั้ง', correct: false },
+      { id: 'b', label: '2 ครั้ง', correct: true },
+      { id: 'c', label: '3 ครั้ง', correct: false },
+      { id: 'd', label: 'ไม่มีการสลับเลย', correct: false },
+    ],
+    explain: 'ตัวอย่างในสไลด์สลับสองครั้ง (ดัชนี 1↔3 แล้ว 3↔8) ก่อนที่ heap property จะกลับมา',
+  },
+];
+
+export default function Chapter05Page() {
+  return (
+    &lt;ChapterLayout chapter={CHAPTER}&gt;
+      &lt;Stage
+        operationLabel="maxHeapify(A, 1)"
+        scopeLabel="Max-Heap"
+        steps={HEAP_STEPS}
+        code={HEAP_CODE}
+        legend={NODE_STATE_LEGEND}
+        renderDiagram={(step) =&gt; {
+          const s = step as (typeof HEAP_STEPS)[number];
+          if (s.scene?.type !== 'tree') return null;
+          return (
+            &lt;div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}&gt;
+              &lt;TreeDiagram scene={s.scene} nodePositions={HEAP_NODE_POS} baseEdges={HEAP_BASE_EDGES} viewBoxHeight={260} /&gt;
+              &lt;HeapArrayDiagram values={s.array} states={s.arrayStates} /&gt;
+            &lt;/div&gt;
+          );
+        }}
+      /&gt;
+
+      &lt;main className="px-6 md:px-10 py-9 max-w-[860px] mx-auto"&gt;
+        &lt;p className="text-[15px] leading-[1.75] mb-9" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          {CONCEPT_POINTS[1]}
+        &lt;/p&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Lesson&lt;/h2&gt;
+          &lt;LessonExplainer sections={LESSON_SECTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Concept&lt;/h2&gt;
+          &lt;ConceptCard points={CONCEPT_POINTS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Complexity&lt;/h2&gt;
+          &lt;p className="text-[14px] leading-[1.7]" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+            สไลด์บทนี้ไม่ได้ระบุ Big-O ของ maxHeapify/buildMaxHeap/priority-queue operations ไว้ตรงๆ
+            ที่ไหนเลย — จึงไม่มีตารางความซับซ้อนสำหรับบทนี้ (ตามกฎความถูกต้องของเนื้อหา:
+            ไม่เดาตัวเลขที่ต้นฉบับไม่ได้ระบุ)
+          &lt;/p&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Quiz&lt;/h2&gt;
+          &lt;Quiz questions={QUIZ_QUESTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;ChapterNav prev={prev} next={next} /&gt;
+      &lt;/main&gt;
+    &lt;/ChapterLayout&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Write Chapter05Page.test.tsx and run it</strong></div>
+  <pre>// src/chapters/05-heaps-pq/Chapter05Page.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import Chapter05Page from './Chapter05Page';
+
+describe('Chapter05Page', () =&gt; {
+  it('renders the stage (tree + array views), concept content, and quiz; no complexity table', () =&gt; {
+    const { container } = render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter05Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('maxHeapify(A, 1)')).toBeInTheDocument();
+    expect(container.querySelector('svg')).toBeInTheDocument(); // tree view
+    expect(screen.getAllByText('16').length).toBeGreaterThan(0); // array view, index 0
+    expect(screen.getByText(/ไม่ได้ระบุ Big-O/)).toBeInTheDocument();
+  });
+
+  it('shows the final swapped array after stepping to the last chip', () =&gt; {
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter05Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    // index 3 starts at value 4 (ARRAY_0) — a page-wide getAllByText('8') would trivially pass
+    // even without stepping, since ARRAY_0 already has an unrelated '8' at index 8 (both the
+    // cell value and its index label render as text '8') — assert on the specific cell instead
+    expect(screen.getByTestId('heap-cell-value-3')).toHaveTextContent('4');
+    const lastChip = screen.getByText(/heap property คืนสภาพ/);
+    lastChip.click();
+    expect(screen.getByTestId('heap-cell-value-3')).toHaveTextContent('8'); // index 3 now holds 8, moved from 4
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/05-heaps-pq/</code> — expect PASS (3 tests total across both files).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 6: Typecheck, commit</strong></div>
+  <pre>npx tsc -b
+git add src/chapters/05-heaps-pq/
+git commit -m "feat: build chapter 05 (Heaps and Priority Queues, sift-down demo)"</pre>
+
+  <h3>Task 4: Wire chapter 05's route in App.tsx</h3>
+  <p class="pathline">Modify: <code>src/App.tsx</code>, <code>src/App.test.tsx</code></p>
+  <p class="note">Read the current App.tsx first — add this route alongside whatever Plans A/C/D have already landed, don't overwrite them. Update the "unbuilt chapter" test's target to whichever chapter is still genuinely <code>available: false</code> at that point (check <code>src/data/chapters.ts</code>).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Add the route</strong></div>
+  <pre>// src/App.tsx
+import Chapter05Page from './chapters/05-heaps-pq/Chapter05Page';
+// ...
+&lt;Route path="/chapter/heaps-pq" element={&lt;Chapter05Page /&gt;} /&gt;</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Add a regression test for the new route</strong></div>
+  <pre>// src/App.test.tsx — add this test to whatever the file currently has:
+it('serves chapter 05 at its own route', () =&gt; {
+  window.location.hash = '#/chapter/heaps-pq';
+  render(&lt;App /&gt;);
+  expect(screen.getByText('maxHeapify(A, 1)')).toBeInTheDocument();
+});
+// If the existing "unbuilt chapter" test targets 'heaps-pq', change its target to a chapter
+// that's still available:false at this point (check src/data/chapters.ts for the current state).</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Run full suite, typecheck, commit</strong></div>
+  <pre>npx vitest run
+npx tsc -b
+git add src/App.tsx src/App.test.tsx
+git commit -m "feat: wire route for chapter 05"</pre>
+
+  <h3>Task 5: Production build verification</h3>
+  <p class="pathline">No files changed.</p>
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Build and open from disk</strong></div>
+  <pre>npm run build</pre>
+  <p>Open <code>dist/index.html</code> as a <code>file://</code> URL. Step through chapter 05's demo — confirm the tree view visibly animates between the three position/edge snapshots as you click through the swap steps, the array view's cell values update in lock-step with the tree, and chapters 03/04's own demos still render identically to before this plan.</p>
+
+</div>
+</body>
+</html>

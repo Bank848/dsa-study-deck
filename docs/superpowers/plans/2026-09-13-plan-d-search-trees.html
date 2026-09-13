@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DSA Study Deck — Plan D: Chapter 04 (Search Trees / AVL) — Plan</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });</script>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --fg:#e6edf3; --muted:#9da7b3;
+          --accent:#58a6ff; --add:#3fb950; --mod:#d29922; --del:#f85149; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; padding:32px 24px 96px; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  h2 { font-size:21px; margin:40px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  h3 { font-size:17px; margin:24px 0 8px; }
+  .tag { display:inline-block; font-size:12px; color:var(--muted); border:1px solid var(--border);
+         border-radius:999px; padding:2px 10px; margin-right:6px; }
+  .meta { color:var(--muted); margin:8px 0 0; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin:14px 0; }
+  .warn { background:rgba(210,153,34,0.1); border:1px solid var(--mod); border-radius:10px; padding:14px 16px; margin:14px 0; }
+  .ba { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .ba > figure { margin:0; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px; }
+  .ba figcaption { font-weight:600; margin-bottom:8px; color:var(--muted); }
+  .ba .before figcaption::before { content:"◀ BEFORE  "; color:var(--del); }
+  .ba .after  figcaption::before { content:"AFTER ▶  ";  color:var(--add); }
+  @media (max-width:820px){ .ba { grid-template-columns:1fr; } }
+  .mermaid { background:#0b0f14; border-radius:8px; padding:10px; overflow:auto; }
+  .changes li { list-style:none; margin:4px 0; }
+  .changes .add::before { content:"+ "; color:var(--add); font-weight:700; }
+  .changes .mod::before { content:"~ "; color:var(--mod); font-weight:700; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+  pre { background:#0b0f14; border:1px solid var(--border); border-radius:8px; padding:12px 14px; overflow:auto; font-size:13px; }
+  code:not(pre code){ background:#0b0f14; border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:13px; }
+  .step { margin:6px 0; }
+  .pathline { color:var(--muted); font-size:13px; }
+  hr.section { border:0; border-top:2px dashed var(--border); margin:48px 0; }
+  .note { color:var(--muted); font-size:13px; }
+  table.batch { border-collapse:collapse; width:100%; }
+  table.batch td, table.batch th { border:1px solid var(--border); padding:6px 10px; text-align:left; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>DSA Study Deck — Plan D: Chapter 04 (Search Trees / AVL)</h1>
+  <p class="meta">
+    <span class="tag">2026-09-13</span>
+    <span class="tag">plan-pro</span>
+    <span class="tag">Plan D of 4</span>
+    <span class="tag">React 18</span>
+    <span class="tag">TypeScript</span>
+    <span class="tag">Vitest</span>
+  </p>
+
+  <h2>📖 Read this first</h2>
+
+  <div class="card">
+    <strong>Goal.</strong> Build chapter 04 (Search Trees / AVL): a step-through demo of an
+    insertion that unbalances an AVL tree, followed by the exact trinode-restructuring rotation
+    the source PDF works through with real values, animated via a CSS-transition position swap
+    (spec §2.2) rather than a JS tween loop.
+    <br><br>
+    <strong>Key decision — a spec correction, found while implementing.</strong> The design spec
+    said chapters 04/05 would "reuse <code>TreeDiagram.tsx</code> as-is." That turned out to be
+    wrong: the shipped <code>TreeDiagram.tsx</code> directly imports <code>BST_NODE_POS</code>/
+    <code>BST_BASE_EDGES</code> from chapter 03's own <code>steps.ts</code> and hardcodes a check
+    for node id <code>'37'</code> — it cannot render any other chapter's tree without those values
+    being chapter 03's. <strong>Task 1 below generalizes it</strong>: positions, base edges, and
+    the "one node introduced partway through" id become props instead of imports, and the
+    previously-hardcoded depth-guide rows and the "value = 37" badge become optional props too.
+    Chapter 03's own page is updated to pass its existing values explicitly — its rendered output
+    is unchanged <strong>except two deliberate label-wording changes</strong> made to keep the copy
+    chapter-agnostic (neither is covered by an assertion in <code>Chapter03Page.test.tsx</code>,
+    confirmed by reading that file): the "node just completed" annotation goes from "แทรกแล้ว"
+    (insert-specific) to "เสร็จแล้ว" (generic), and <code>NODE_STATE_LEGEND</code>'s 'ok' entry goes
+    from "แทรกสำเร็จ" to "เสร็จสิ้น/สำเร็จ". Everything else — node positions, edges, colors, the
+    badge, depth guides — is pixel-identical. This is why Task 1 here
+    touches <code>src/chapters/03-trees-bst/</code> files as well as the new chapter's own.
+    <br><br>
+    A second necessity found the same way: a rotation doesn't just move existing nodes, it changes
+    which edges exist (e.g. <code>44-78</code> is removed, <code>44-62</code> is added). The
+    spec's <code>TreeScene.positions</code> override alone can't express that — so this plan adds
+    one more optional field, <code>TreeScene.edgeList</code>, letting a single step declare its
+    own exact edge set instead of relying on the diagram's default base-edge list. Chapter 03/05
+    never set it, so their behavior is unaffected.
+  </div>
+
+  <h3>Before → After</h3>
+  <div class="ba">
+    <figure class="before"><figcaption>Today</figcaption>
+      <div class="mermaid">
+flowchart TB
+  TD["TreeDiagram.tsx<br/>imports BST_NODE_POS/BST_BASE_EDGES<br/>from chapter03's steps.ts directly<br/>hardcodes '37' check"]
+  CH3["Chapter03Page"] --> TD
+      </div>
+    </figure>
+    <figure class="after"><figcaption>After this plan</figcaption>
+      <div class="mermaid">
+flowchart TB
+  TD["TreeDiagram.tsx<br/>nodePositions/baseEdges/newNodeId/<br/>depthGuides/badgeLabel are all props<br/>scene.positions + scene.edgeList overrides"]
+  CH3["Chapter03Page<br/>passes its own BST_* values explicitly"] --> TD
+  CH4["Chapter04Page<br/>passes AVL_* values, uses positions+edgeList<br/>for the rotation step"] --> TD
+      </div>
+    </figure>
+  </div>
+
+  <h3>What's changing</h3>
+  <ul class="changes">
+    <li class="mod"><code>src/types.ts</code> — add both <code>TreeScene.positions?: Record&lt;string,{x,y}&gt;</code> and <code>TreeScene.edgeList?: [string,string][]</code> (neither exists yet as of this plan being written — see Task 1 Step 1)</li>
+    <li class="mod"><code>src/chapters/03-trees-bst/TreeDiagram.tsx</code> — generalize to accept <code>nodePositions</code>, <code>baseEdges</code>, <code>newNodeId</code>, <code>depthGuides</code>, <code>badgeLabel</code>, <code>viewBoxHeight</code> as props</li>
+    <li class="mod"><code>src/chapters/03-trees-bst/steps.ts</code> — add <code>BST_DEPTH_GUIDES</code> export</li>
+    <li class="mod"><code>src/chapters/03-trees-bst/Chapter03Page.tsx</code>, <code>TreeDiagram.test.tsx</code> — pass the new props explicitly; behavior/output unchanged</li>
+    <li class="mod"><code>src/data/chapters.ts</code> — flip <code>available: true</code> for <code>search-trees</code></li>
+    <li class="add"><code>public/pdf/2301265_Search_Trees_V3-838647-17875466296651.pdf</code></li>
+    <li class="add"><code>src/chapters/04-search-trees/{steps.ts,Chapter04Page.tsx}</code> + tests (no new diagram file — reuses the generalized <code>TreeDiagram</code>)</li>
+    <li class="mod"><code>src/App.tsx</code>, <code>src/App.test.tsx</code> — new route</li>
+  </ul>
+  <p class="note"><strong>Depends on an already-shipped component (not part of this plan's own file list):</strong> Task 3's <code>Chapter04Page.tsx</code> imports <code>src/components/content/LessonExplainer.tsx</code>, which landed separately in commit <code>844dbd5a</code> ("add LessonExplainer detailed-teaching section") — grep for that file before starting Task 3; if it's missing for any reason, copy its ~15-line implementation from chapter 02 or 03's own commit rather than re-designing it.</p>
+
+  <h3>Parallelization analysis</h3>
+  <table class="batch">
+    <tr><th>Batch</th><th>Tasks</th><th>Why</th></tr>
+    <tr><td>1</td><td>Task 1 (TreeDiagram generalization)</td><td>Every later task depends on the new prop signature; touches the one file everything else imports — alone</td></tr>
+    <tr><td>2</td><td>Task 2 (chapters.ts + PDF) and Task 3 (chapter 04 content) in parallel</td><td>Disjoint files</td></tr>
+    <tr><td>3</td><td>Task 4 (App.tsx wiring)</td><td>Needs Task 3's page — alone</td></tr>
+    <tr><td>4</td><td>Task 5 (build verification)</td><td>Last</td></tr>
+  </table>
+  <p class="note">Critical path: Task 1 → {2, 3 in parallel} → Task 4 → Task 5.</p>
+
+  <div class="warn">
+    <strong>Cross-plan sequencing note:</strong> Plan B (heaps, chapter 05) also needs
+    <code>TreeDiagram</code>'s generalized props from Task 1 here. <strong>Execute this plan (D)
+    before Plan B</strong> — if Plan B lands first, its own Task 1 will need to perform this same
+    <code>TreeDiagram.tsx</code> generalization itself (duplicating work) rather than simply
+    importing what's already there. Plan B's own plan file carries the same note. If both are
+    already in flight, whichever merges first should be treated as the source of truth for
+    <code>TreeDiagram.tsx</code>'s final shape.
+  </div>
+
+  <hr class="section" />
+
+  <h2>🔧 Implementation plan</h2>
+
+  <div class="card">
+    <p><strong>Goal:</strong> Generalize <code>TreeDiagram</code> for multi-chapter reuse, then build chapter 04's AVL rotation demo on top of it.</p>
+    <p><strong>Architecture:</strong> <code>TreeDiagram</code> becomes a pure function of props (scene + layout data) with zero cross-chapter imports. Chapter 04 follows the same directory pattern as the others, minus its own diagram file.</p>
+    <p><strong>Tech Stack:</strong> React 18, TypeScript, Vite, Tailwind, Vitest + Testing Library.</p>
+    <p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-09-13-remaining-chapters-design.md</code> (§2.2, §5 — this plan corrects §5's "no retrofitting" claim, see card above)</p>
+  </div>
+
+  <h3>Global Constraints</h3>
+  <ul>
+    <li>Chapter 03's rendered output must be pixel-identical after Task 1 except the two deliberate label-wording changes called out above — this is a refactor, not a redesign.</li>
+    <li>No new design tokens.</li>
+    <li>Content must trace to the PDF (spec §1) — the insert-54/rotate-around-(50,62,78) example and all quoted phrases below come from the source's own pp.14-16, 21.</li>
+  </ul>
+
+  <h3>Task 1: Generalize TreeDiagram for multi-chapter reuse</h3>
+  <p class="pathline">
+    Modify: <code>src/types.ts</code>, <code>src/chapters/03-trees-bst/TreeDiagram.tsx</code>,
+    <code>src/chapters/03-trees-bst/steps.ts</code>, <code>src/chapters/03-trees-bst/Chapter03Page.tsx</code>,
+    <code>src/chapters/03-trees-bst/TreeDiagram.test.tsx</code>
+  </p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Add TreeScene.edgeList to types.ts</strong></div>
+  <pre>// src/types.ts — grep the current file first: if `positions`/`edgeList` already exist (e.g.
+// Plan A/C landed after a change that added them), skip re-adding and just verify the shape
+// matches. As of this plan being written, NEITHER field exists yet on TreeScene — add both:
+export interface TreeScene {
+  type: 'tree';
+  nodes: Record&lt;string, NodeState&gt;;
+  edges?: Record&lt;string, EdgeState&gt;;
+  /** per-step position override; falls back to nodePositions when a node id is absent. */
+  positions?: Record&lt;string, { x: number; y: number }&gt;;
+  /** exact edge list for this step, overriding the diagram's default base-edge list — needed
+   *  when a step changes the tree's structure itself (e.g. a rotation), not just node
+   *  states/positions. Omit to use the diagram's own baseEdges (filtered by newNodeId). */
+  edgeList?: [string, string][];
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Update TreeDiagram.test.tsx first (TDD: see it fail against the OLD component)</strong></div>
+  <pre>// src/chapters/03-trees-bst/TreeDiagram.test.tsx — replace the whole file
+import { render } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import TreeDiagram from './TreeDiagram';
+import { BST_INSERT_STEPS, BST_NODE_POS, BST_BASE_EDGES, BST_DEPTH_GUIDES } from './steps';
+
+describe('TreeDiagram', () =&gt; {
+  it('renders a labeled circle for every base node on step 1', () =&gt; {
+    const { container } = render(
+      &lt;TreeDiagram scene={BST_INSERT_STEPS[0].scene} nodePositions={BST_NODE_POS} baseEdges={BST_BASE_EDGES} newNodeId="37" depthGuides={BST_DEPTH_GUIDES} badgeLabel="value = 37" /&gt;
+    );
+    const labels = Array.from(container.querySelectorAll('text')).map((t) =&gt; t.textContent);
+    expect(labels).toEqual(expect.arrayContaining(['30', '15', '42', '45']));
+    expect(labels).not.toContain('37');
+  });
+
+  it('renders the dashed "?" slot once a step introduces node 37 as slot state', () =&gt; {
+    const slotStep = BST_INSERT_STEPS.find((s) =&gt; s.scene.nodes['37'] === 'slot')!;
+    const { container } = render(
+      &lt;TreeDiagram scene={slotStep.scene} nodePositions={BST_NODE_POS} baseEdges={BST_BASE_EDGES} newNodeId="37" depthGuides={BST_DEPTH_GUIDES} badgeLabel="value = 37" /&gt;
+    );
+    const labels = Array.from(container.querySelectorAll('text')).map((t) =&gt; t.textContent);
+    expect(labels).toContain('?');
+  });
+
+  it('renders node 37 with its real label once inserted', () =&gt; {
+    const okStep = BST_INSERT_STEPS.find((s) =&gt; s.scene.nodes['37'] === 'ok')!;
+    const { container } = render(
+      &lt;TreeDiagram scene={okStep.scene} nodePositions={BST_NODE_POS} baseEdges={BST_BASE_EDGES} newNodeId="37" depthGuides={BST_DEPTH_GUIDES} badgeLabel="value = 37" /&gt;
+    );
+    const labels = Array.from(container.querySelectorAll('text')).map((t) =&gt; t.textContent);
+    expect(labels).toContain('37');
+  });
+
+  it('renders exactly scene.edgeList when provided, ignoring baseEdges', () =&gt; {
+    const { container } = render(
+      &lt;TreeDiagram
+        scene={{ type: 'tree', nodes: { a: 'idle', b: 'idle' }, edgeList: [['a', 'b']] }}
+        nodePositions={{ a: { x: 10, y: 10 }, b: { x: 50, y: 50 } }}
+        baseEdges={[['a', 'z']]}
+      /&gt;
+    );
+    expect(container.querySelectorAll('line').length).toBe(1);
+  });
+});</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Run to verify it fails</strong></div>
+  <p>Run: <code>npx vitest run src/chapters/03-trees-bst/TreeDiagram.test.tsx</code> — expect FAIL (component doesn't accept these props yet; <code>BST_DEPTH_GUIDES</code> doesn't exist yet either).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Add BST_DEPTH_GUIDES to steps.ts, and fix BST_BASE_EDGES to include the 42-37 edge</strong></div>
+  <p class="note"><strong>Regression fix (found by review):</strong> the current <code>BST_BASE_EDGES</code> never contains <code>['42','37']</code> — the current (pre-refactor) <code>TreeDiagram.tsx</code> compensates by manually appending that edge whenever node 37 exists (<code>[...BST_BASE_EDGES, ...(showSlot ? [['42','37']] : [])]</code>). The new generic component uses a <em>filter</em>, not an append, so without this fix chapter 03 silently loses the 42→37 edge after this refactor. Add the edge to the base list itself — the new component's <code>newNodeId</code> filter already hides/shows it correctly based on whether node 37 exists in <code>scene.nodes</code>, so no other logic needs to change.</p>
+  <pre>// src/chapters/03-trees-bst/steps.ts — BST_BASE_EDGES currently reads:
+//   export const BST_BASE_EDGES: [string, string][] = [['30','15'],['30','42'],['42','45']];
+// change it to include the 42-37 edge (newNodeId="37" filtering still hides it until step
+// introduces node 37, exactly like the old manual-append behavior did):
+export const BST_BASE_EDGES: [string, string][] = [['30', '15'], ['30', '42'], ['42', '45'], ['42', '37']];
+
+// add this new export alongside BST_NODE_POS/BST_BASE_EDGES:
+export const BST_DEPTH_GUIDES: { y: number; label: string }[] = [
+  { y: 58, label: '0' },
+  { y: 142, label: '1' },
+  { y: 226, label: '2' },
+];</pre>
+  <p class="note">Add a regression-guard assertion to <code>TreeDiagram.test.tsx</code>'s existing "renders node 37 with its real label once inserted" test (Step 2 above): after that test's render, also assert <code>expect(container.querySelectorAll('line').length).toBe(4)</code> (3 base edges + the 42-37 edge) — this makes a future accidental drop of that edge fail the suite instead of shipping silently.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 5: Rewrite TreeDiagram.tsx</strong></div>
+  <pre>// src/chapters/03-trees-bst/TreeDiagram.tsx — replace the whole file
+import type { TreeScene, NodeState, EdgeState } from '../../types';
+
+const R = 27;
+
+const NODE_STYLE: Record&lt;NodeState, { fill: string; stroke: string; text: string; w: number; dash: string; weight: string }&gt; = {
+  idle: { fill: 'var(--tree-node-idle-fill)', stroke: 'var(--tree-node-idle-stroke)', text: 'var(--tree-node-idle-text)', w: 2, dash: '', weight: '400' },
+  walk: { fill: 'var(--tree-node-walk-fill)', stroke: 'var(--tree-node-walk-stroke)', text: 'var(--tree-node-walk-text)', w: 2, dash: '', weight: '500' },
+  here: { fill: 'var(--tree-node-here-fill)', stroke: 'var(--tree-node-here-stroke)', text: 'var(--tree-node-here-text)', w: 2.6, dash: '', weight: '700' },
+  slot: { fill: 'var(--tree-node-slot-fill)', stroke: 'var(--tree-node-slot-stroke)', text: 'var(--tree-node-slot-text)', w: 2, dash: '4 4', weight: '600' },
+  fresh: { fill: 'var(--tree-node-fresh-fill)', stroke: 'var(--tree-node-fresh-stroke)', text: 'var(--tree-node-fresh-text)', w: 2.6, dash: '', weight: '700' },
+  ok: { fill: 'var(--tree-node-ok-fill)', stroke: 'var(--tree-node-ok-stroke)', text: 'var(--tree-node-ok-text)', w: 2.6, dash: '', weight: '700' },
+};
+
+const EDGE_STYLE: Record&lt;EdgeState, { c: string; w: number }&gt; = {
+  idle: { c: 'var(--tree-edge-idle-stroke)', w: 2 },
+  walk: { c: 'var(--tree-edge-walk-stroke)', w: 2.4 },
+  ok: { c: 'var(--tree-edge-ok-stroke)', w: 2.6 },
+};
+
+export const NODE_STATE_LEGEND: { color: string; label: string }[] = [
+  { color: NODE_STYLE.walk.stroke, label: 'เดินผ่านแล้ว' },
+  { color: NODE_STYLE.here.stroke, label: 'กำลังอยู่ตรงนี้' },
+  { color: NODE_STYLE.ok.stroke, label: 'เสร็จสิ้น/สำเร็จ' },
+  { color: NODE_STYLE.idle.stroke, label: 'ยังไม่แตะ' },
+];
+
+export interface TreeDiagramProps {
+  scene: TreeScene;
+  /** default layout for every node that can ever appear in this demo */
+  nodePositions: Record&lt;string, { x: number; y: number }&gt;;
+  /** every edge that can ever appear, before newNodeId filtering — ignored for a step that sets
+   *  scene.edgeList (a rotation changes the edge set itself, not just node states) */
+  baseEdges: [string, string][];
+  /** the one node id that doesn't exist until scene.nodes includes it (e.g. the node being
+   *  inserted this step) — omit if every node in nodePositions exists from step 1 */
+  newNodeId?: string;
+  /** dashed depth-guide rows drawn behind the tree — omit for no guides */
+  depthGuides?: { y: number; label: string }[];
+  /** static label badge in the top-left corner (e.g. "value = 37") — omit for no badge */
+  badgeLabel?: string;
+  /** SVG viewBox height; width is always 780. Default 260 (chapter 03's original size). */
+  viewBoxHeight?: number;
+}
+
+export default function TreeDiagram({
+  scene, nodePositions, baseEdges, newNodeId, depthGuides = [], badgeLabel, viewBoxHeight = 260,
+}: TreeDiagramProps) {
+  const nodes = scene.nodes;
+  const edges: Record&lt;string, EdgeState&gt; = scene.edges ?? {};
+  const showNew = newNodeId ? newNodeId in nodes : true;
+  const allEdges: [string, string][] = scene.edgeList ?? baseEdges.filter(
+    ([a, b]) =&gt; (a !== newNodeId || showNew) &amp;&amp; (b !== newNodeId || showNew)
+  );
+
+  return (
+    &lt;svg width="100%" height="246" viewBox={`0 0 780 ${viewBoxHeight}`} preserveAspectRatio="xMidYMid meet"&gt;
+      {depthGuides.map(({ y, label }) =&gt; (
+        &lt;g key={label}&gt;
+          &lt;line x1={108} y1={y} x2={770} y2={y} stroke="var(--color-border-subtle)" strokeWidth={1} strokeDasharray="2 6" /&gt;
+          &lt;text x={98} y={y + 4} textAnchor="end" fontFamily="JetBrains Mono" fontSize={9.5} fill="var(--color-faint-foreground)"&gt;
+            depth {label}
+          &lt;/text&gt;
+        &lt;/g&gt;
+      ))}
+
+      {allEdges.map(([a, b]) =&gt; {
+        const st = EDGE_STYLE[edges[`${a}-${b}`] ?? 'idle'];
+        const dash = newNodeId &amp;&amp; nodes[newNodeId] === 'slot' &amp;&amp; b === newNodeId ? '5 4' : '';
+        const pa = scene.positions?.[a] ?? nodePositions[a];
+        const pb = scene.positions?.[b] ?? nodePositions[b];
+        return (
+          &lt;line key={`${a}-${b}`} x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+            stroke={st.c} strokeWidth={st.w} strokeDasharray={dash} strokeLinecap="round"
+            style={{ transition: 'x1 400ms ease, y1 400ms ease, x2 400ms ease, y2 400ms ease' }} /&gt;
+        );
+      })}
+
+      {Object.keys(nodePositions).map((id) =&gt; {
+        if (id === newNodeId &amp;&amp; !showNew) return null;
+        const state = nodes[id] ?? 'idle';
+        const st = NODE_STYLE[state];
+        const n = scene.positions?.[id] ?? nodePositions[id];
+        const label = state === 'slot' ? '?' : id;
+        return (
+          &lt;g key={id}&gt;
+            {(state === 'here' || state === 'fresh') &amp;&amp; (
+              &lt;circle cx={n.x} cy={n.y} r={35} fill="none" stroke="var(--tree-node-here-stroke)" strokeOpacity={0.35} strokeWidth={1.2}
+                style={{ transition: 'cx 400ms ease, cy 400ms ease' }} /&gt;
+            )}
+            {state !== 'slot' &amp;&amp; &lt;circle cx={n.x} cy={n.y} r={R} fill="var(--tree-node-base-fill)" style={{ transition: 'cx 400ms ease, cy 400ms ease' }} /&gt;}
+            &lt;circle cx={n.x} cy={n.y} r={R} fill={st.fill} stroke={st.stroke} strokeWidth={st.w} strokeDasharray={st.dash}
+              style={{ transition: 'cx 400ms ease, cy 400ms ease' }} /&gt;
+            &lt;text x={n.x} y={n.y + 5} textAnchor="middle" fontFamily="JetBrains Mono" fontSize={state === 'slot' ? 14 : 15} fontWeight={st.weight} fill={st.text}
+              style={{ transition: 'x 400ms ease, y 400ms ease' }}&gt;
+              {label}
+            &lt;/text&gt;
+            {state === 'here' &amp;&amp; (
+              &lt;text x={n.x + R + 8} y={n.y - R - 4} fontFamily="JetBrains Mono" fontSize={10} fill="var(--color-highlight)"&gt;◂ กำลังดู&lt;/text&gt;
+            )}
+            {state === 'ok' &amp;&amp; (
+              &lt;text x={n.x + R + 9} y={n.y + 4} fontFamily="JetBrains Mono" fontSize={10} fill="var(--color-success)"&gt;◂ เสร็จแล้ว&lt;/text&gt;
+            )}
+          &lt;/g&gt;
+        );
+      })}
+
+      {badgeLabel &amp;&amp; (
+        &lt;g&gt;
+          &lt;rect x={10} y={8} width={114} height={30} rx={8} fill="var(--color-surface-raised)" stroke="var(--color-border-strong)" strokeDasharray="3 3" /&gt;
+          &lt;text x={67} y={27} textAnchor="middle" fontFamily="JetBrains Mono" fontSize={12} fill="var(--color-muted-foreground)"&gt;{badgeLabel}&lt;/text&gt;
+        &lt;/g&gt;
+      )}
+    &lt;/svg&gt;
+  );
+}</pre>
+  <p class="note">Two intentional wording changes for chapter 03 (see the "Key decision" card above): the "◂ แทรกแล้ว" annotation is now "◂ เสร็จแล้ว", and <code>NODE_STATE_LEGEND</code>'s 'ok' label is now "เสร็จสิ้น/สำเร็จ" (was "แทรกสำเร็จ") — both to be chapter-agnostic rather than insert-specific. Chapter 03's own test only checks node labels ('30','37','?'), not this annotation/legend text, so neither breaks it.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 6: Update Chapter03Page.tsx to pass the new props explicitly</strong></div>
+  <pre>// src/chapters/03-trees-bst/Chapter03Page.tsx — change these two lines only:
+// import line:
+import TreeDiagram, { NODE_STATE_LEGEND } from './TreeDiagram';
+import { BST_INSERT_STEPS, BST_INSERT_CODE, BST_NODE_POS, BST_BASE_EDGES, BST_DEPTH_GUIDES } from './steps';
+// renderDiagram prop on &lt;Stage&gt;:
+renderDiagram={(step) =&gt; (step.scene?.type === 'tree' ? (
+  &lt;TreeDiagram scene={step.scene} nodePositions={BST_NODE_POS} baseEdges={BST_BASE_EDGES} newNodeId="37" depthGuides={BST_DEPTH_GUIDES} badgeLabel="value = 37" /&gt;
+) : null)}
+// everything else in the file (imports of ChapterLayout/Stage/ConceptCard/etc., CONCEPT_POINTS,
+// COMPLEXITY_ROWS, QUIZ_QUESTIONS, the JSX body) is unchanged.</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 7: Run both test files and the full suite, typecheck</strong></div>
+  <pre>npx vitest run src/chapters/03-trees-bst/
+npx vitest run
+npx tsc -b</pre>
+  <p>Expected: all PASS — chapter 03's <code>Chapter03Page.test.tsx</code> assertions (unchanged) still hold because the rendered node/label output is identical to before.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 8: Commit</strong></div>
+  <pre>git add src/types.ts src/chapters/03-trees-bst/
+git commit -m "refactor: generalize TreeDiagram for multi-chapter reuse (chapter 03 output unchanged)"</pre>
+
+  <h3>Task 2: Wire chapters.ts + copy source PDF</h3>
+  <p class="pathline">Modify: <code>src/data/chapters.ts</code><br>Create: <code>public/pdf/2301265_Search_Trees_V3-838647-17875466296651.pdf</code></p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Copy PDF, flip available, run suite, commit</strong></div>
+  <pre>cp "../2301265_Search_Trees_V3-838647-17875466296651.pdf" public/pdf/
+# src/data/chapters.ts — change id '04' search-trees's `available: false` to `available: true`
+npx vitest run
+git add public/pdf/2301265_Search_Trees_V3-838647-17875466296651.pdf src/data/chapters.ts
+git commit -m "feat: enable chapter 04 and add its source PDF"</pre>
+
+  <h3>Task 3: Chapter 04 — Search Trees (AVL rotation demo)</h3>
+  <p class="pathline">
+    Create: <code>src/chapters/04-search-trees/steps.ts</code>,
+    <code>src/chapters/04-search-trees/Chapter04Page.tsx</code>,
+    <code>src/chapters/04-search-trees/Chapter04Page.test.tsx</code>
+  </p>
+  <p class="note">Demo: the PDF's own fully-worked example (pp.14-16) — insert 54 as the right child of node 62, causing node 78 to become the first unbalanced ancestor (z=78, y=50, x=62 in the source's trinode-restructuring notation), resolved by a double rotation that makes 62 the new local subtree root. Every node id, edge, and position below was transcribed from that worked example; the "after" tree matches the PDF's own p.16 diagram exactly.</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Write steps.ts</strong></div>
+  <pre>// src/chapters/04-search-trees/steps.ts
+// Worked example from "2301265_Search_Trees_V3...pdf" pp.14-16: insert 54 as 62's right child,
+// z=78/y=50/x=62 become unbalanced, double rotation makes 62 the new subtree root. Complexity
+// statements from p.21 ("a single restructure is O(1)", "insert is O(log n)").
+import type { VisualizerStep, TreeScene } from '../../types';
+
+export const AVL_CODE: string[] = [
+  'insert(v)  // expand external node, same as plain BST insert',
+  'walk back up from v, updating heights',
+  'if a node z becomes unbalanced (height diff &gt; 1):',
+  '  y = taller child of z; x = taller child of y',
+  '  restructure(x, y, z)  // single or double rotation, O(1)',
+  '  // repeat check upward; total insert cost is O(log n)',
+];
+
+const BEFORE_POS: Record&lt;string, { x: number; y: number }&gt; = {
+  '44': { x: 390, y: 40 }, '17': { x: 220, y: 100 }, '78': { x: 600, y: 100 },
+  '32': { x: 260, y: 160 }, '50': { x: 480, y: 160 }, '88': { x: 700, y: 160 },
+  '48': { x: 430, y: 220 }, '62': { x: 540, y: 220 }, '54': { x: 560, y: 280 },
+};
+
+const AFTER_POS: Record&lt;string, { x: number; y: number }&gt; = {
+  '44': { x: 390, y: 40 }, '17': { x: 220, y: 100 }, '62': { x: 560, y: 100 },
+  '32': { x: 260, y: 160 }, '50': { x: 480, y: 160 }, '78': { x: 660, y: 160 },
+  '48': { x: 430, y: 220 }, '54': { x: 530, y: 220 }, '88': { x: 700, y: 220 },
+};
+
+const BEFORE_EDGES: [string, string][] = [['44', '17'], ['44', '78'], ['17', '32'], ['78', '50'], ['78', '88'], ['50', '48'], ['50', '62']];
+const AFTER_EDGES: [string, string][] = [['44', '17'], ['44', '62'], ['17', '32'], ['62', '50'], ['62', '78'], ['50', '48'], ['50', '54'], ['78', '88']];
+
+export const AVL_NODE_POS = BEFORE_POS;
+export const AVL_BASE_EDGES = BEFORE_EDGES;
+export const AVL_DEPTH_GUIDES = [{ y: 40, label: '0' }, { y: 100, label: '1' }, { y: 160, label: '2' }, { y: 220, label: '3' }, { y: 280, label: '4' }];
+
+const idleAll = { '44': 'idle', '17': 'idle', '78': 'idle', '32': 'idle', '50': 'idle', '88': 'idle', '48': 'idle', '62': 'idle' } as const;
+
+export const AVL_INSERT_STEPS: (VisualizerStep &amp; { scene: TreeScene })[] = [
+  { chip: 'ต้นไม้เริ่มต้น', lines: [], scene: { type: 'tree', nodes: { ...idleAll }, positions: BEFORE_POS, edgeList: BEFORE_EDGES },
+    narr: 'AVL tree ที่สมดุลอยู่แล้ว — ทุก node ความสูงของลูกซ้าย-ขวาต่างกันไม่เกิน 1' },
+  { chip: 'insert 54', lines: [1, 2], scene: { type: 'tree', nodes: { ...idleAll, '62': 'walk', '54': 'fresh' }, positions: BEFORE_POS, edgeList: [...BEFORE_EDGES, ['62', '54']] },
+    narr: 'แทรก 54 เป็นลูกขวาของ 62 (ขยาย external node เหมือน BST ปกติ) — ทำให้ 62 สูงขึ้นเป็น 2, 78 สูงขึ้นเป็น 4, 44 สูงขึ้นเป็น 5' },
+  { chip: 'พบจุดไม่สมดุล', lines: [3, 4], scene: { type: 'tree', nodes: { ...idleAll, '78': 'here', '50': 'walk', '62': 'walk', '54': 'ok' }, positions: BEFORE_POS, edgeList: [...BEFORE_EDGES, ['62', '54']] },
+    narr: 'เดินย้อนกลับขึ้นไปพบ **z=78** (ancestor แรกที่ไม่สมดุล), **y=50** (ลูกที่สูงกว่าของ z), **x=62** (ลูกที่สูงกว่าของ y) — inorder ของ (x,y,z) คือ (50, 62, 78)' },
+  { chip: 'หมุนต้นไม้ (double rotation)', lines: [5], scene: { type: 'tree', nodes: { ...idleAll, '62': 'ok', '50': 'walk', '78': 'walk', '54': 'ok' }, positions: AFTER_POS, edgeList: AFTER_EDGES },
+    narr: '**62 กลายเป็น root ใหม่ของ subtree นี้** — 50 เป็นลูกซ้าย (พร้อม 48, 54), 78 เป็นลูกขวา (พร้อม 88) — การหมุนใช้เวลา O(1)' },
+  { chip: 'สมดุลแล้ว', lines: [6], scene: { type: 'tree', nodes: { ...idleAll, '62': 'idle', '54': 'idle' }, positions: AFTER_POS, edgeList: AFTER_EDGES },
+    narr: 'ต้นไม้สมดุลอีกครั้ง ตรงกับผลลัพธ์ในสไลด์ทุกประการ — insert ทั้งหมด (find + restructure) ใช้เวลารวม O(log n)' },
+];</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Write Chapter04Page.tsx</strong></div>
+  <pre>// src/chapters/04-search-trees/Chapter04Page.tsx
+import ChapterLayout from '../../components/layout/ChapterLayout';
+import Stage from '../../components/visualizer/Stage';
+import ConceptCard from '../../components/content/ConceptCard';
+import LessonExplainer, { type LessonSection } from '../../components/content/LessonExplainer';
+import ComplexityTable from '../../components/content/ComplexityTable';
+import Quiz from '../../components/content/Quiz';
+import ChapterNav from '../../components/content/ChapterNav';
+import TreeDiagram, { NODE_STATE_LEGEND } from '../03-trees-bst/TreeDiagram';
+import { AVL_INSERT_STEPS, AVL_CODE, AVL_NODE_POS, AVL_BASE_EDGES, AVL_DEPTH_GUIDES } from './steps';
+import { getChapterBySlug, getAdjacentChapters } from '../../data/chapters';
+import type { ComplexityRow, QuizQuestion } from '../../types';
+
+const CHAPTER = getChapterBySlug('search-trees')!;
+const { prev, next } = getAdjacentChapters('search-trees');
+
+const LESSON_SECTIONS: LessonSection[] = [
+  {
+    title: 'ทำไม BST ธรรมดาไม่พอ',
+    body: 'BST ปกติ (บทที่แล้ว) เร็วแค่ตอนทรีสมดุลเท่านั้น ถ้าใส่ค่าตามลำดับต่อเนื่องกันเรื่อยๆ ทรีจะเอียงเป็นเส้นตรงและกลายเป็น O(n) แทน O(log n) — AVL tree แก้ปัญหานี้โดยเพิ่มกฎบังคับความสมดุลเข้าไป: ทุก internal node ต้องมีความสูงของ subtree ซ้ายกับขวาต่างกันไม่เกิน 1 เสมอ (นิยามตรงจากสไลด์ AVL Tree Definition) กฎนี้การันตีว่าความสูงของทั้งทรีจะไม่มีวันเกิน O(log n) ไม่ว่าจะแทรกข้อมูลตามลำดับไหนก็ตาม',
+  },
+  {
+    title: 'trinode restructuring คืออะไร ทำไมต้องมี z, y, x',
+    body: 'เมื่อ insert ทำให้ node ใดกลายเป็น "ไม่สมดุล" (ต่างกันเกิน 1) สไลด์ตั้งชื่อ node นั้นว่า z (ancestor ตัวแรกที่ไม่สมดุล เดินย้อนขึ้นจาก node ที่เพิ่งแทรก), y (ลูกของ z ฝั่งที่สูงกว่า), x (ลูกของ y ฝั่งที่สูงกว่า) — สามตัวนี้เรียงกันเป็น 3 ระดับต่อเนื่อง trinode restructuring คือการจัดเรียง z, y, x ใหม่ให้ node ตรงกลาง (เรียงตาม inorder) กลายเป็น root ใหม่ของ subtree นี้แทน ทำให้ความสูงกลับมาเท่าเดิมก่อนแทรก การจัดเรียงใหม่นี้คือสิ่งที่เห็นเป็น "การหมุนต้นไม้" บนไดอะแกรม',
+  },
+  {
+    title: 'เดโมด้านบนเกิดอะไรขึ้นบ้าง',
+    body: 'เดโมสาธิตตัวอย่างจากสไลด์ตรงๆ: แทรก 54 เข้าไปทำให้ node 78 กลายเป็นตัวไม่สมดุล (z=78) โดยลูกที่สูงกว่าของ 78 คือ 50 (y=50) และลูกที่สูงกว่าของ 50 คือ 62 (x=62) — เรียง (x,y,z) ตาม inorder ได้ (50, 62, 78) ดังนั้น 62 (ตัวกลาง) จึงกลายเป็น root ใหม่ของ subtree นี้ โดยมี 50 เป็นลูกซ้ายและ 78 เป็นลูกขวา การหมุนใช้เวลาแค่ O(1) เพราะแค่จัดเรียง pointer 3 ตัวใหม่ ไม่ต้องแตะ node อื่นในทรีเลย',
+  },
+  {
+    title: 'ทำไม insert ทั้งหมดยังคง O(log n)',
+    body: 'insert ทำสองขั้นตอน: (1) เดินจาก root ลงไปหาตำแหน่งที่ควรแทรก ซึ่งใช้เวลา O(log n) เพราะความสูงของ AVL tree ถูกการันตีไว้ไม่เกิน O(log n) เสมอ และ (2) เดินย้อนกลับขึ้นไปเช็คความสมดุลทีละชั้น ซึ่งก็ยาวสุด O(log n) ชั้นเช่นกัน — trinode restructuring เกิดขึ้นอย่างมากแค่ 1 ครั้งต่อการแทรก 1 ครั้ง และแต่ละครั้งใช้แค่ O(1) รวมทั้งหมดจึงยังคงเป็น O(log n) ตามที่สไลด์ Running Times for AVL Trees ระบุไว้',
+  },
+];
+
+const CONCEPT_POINTS = [
+  'AVL tree คือ BST ที่ทุก internal node มีความสูงของลูกซ้าย-ขวาต่างกันไม่เกิน 1 — ทำให้ความสูงของทั้งต้นไม้อยู่ที่ O(log n) เสมอ',
+  'การแทรกทำแบบ BST ปกติก่อน (ขยาย external node) แล้วเดินย้อนขึ้นไปหา ancestor แรกที่ไม่สมดุล — ถ้าเจอให้ทำ trinode restructuring (หมุนต้นไม้) เพื่อดึงสมดุลกลับมา',
+  'การหมุนแต่ละครั้งใช้เวลา O(1) และเกิดขึ้นอย่างมาก 1 ครั้งต่อการแทรก 1 ครั้ง — รวมกับการค้นหา O(log n) ทำให้ insert ทั้งหมดยังคง O(log n)',
+];
+
+const COMPLEXITY_ROWS: ComplexityRow[] = [
+  { op: 'find', best: 'O(log n)', avg: 'O(log n)', worst: 'O(log n)', worstGood: true, growthPct: 30 },
+  { op: 'insert', best: 'O(log n)', avg: 'O(log n)', worst: 'O(log n)', worstGood: true, growthPct: 30 },
+  { op: 'remove', best: 'O(log n)', avg: 'O(log n)', worst: 'O(log n)', worstGood: true, growthPct: 30 },
+  { op: 'restructure (1 rotation)', best: 'O(1)', avg: 'O(1)', worst: 'O(1)', worstGood: true, growthPct: 10 },
+];
+
+const QUIZ_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'avl-balance-def',
+    prompt: 'ตามนิยาม AVL tree ความสูงของลูกทั้งสองฝั่งของ internal node ใดๆ ต่างกันได้ไม่เกินเท่าไหร่',
+    options: [
+      { id: 'a', label: '0', correct: false },
+      { id: 'b', label: '1', correct: true },
+      { id: 'c', label: '2', correct: false },
+      { id: 'd', label: 'log n', correct: false },
+    ],
+    explain: 'สไลด์ AVL Tree Definition ระบุตรงๆ ว่าความสูงของลูกต่างกันได้ไม่เกิน 1',
+  },
+  {
+    id: 'avl-new-root',
+    prompt: 'ในตัวอย่าง trinode restructuring ของสไลด์ หลังแทรก 54 และหมุนต้นไม้แล้ว node ใดกลายเป็น root ใหม่ของ subtree แทนที่ 78',
+    options: [
+      { id: 'a', label: '50', correct: false },
+      { id: 'b', label: '54', correct: false },
+      { id: 'c', label: '62', correct: true },
+      { id: 'd', label: '78', correct: false },
+    ],
+    explain: 'สไลด์ "Insertion Example, continued" แสดง 62 เป็น root ใหม่ของ subtree นี้',
+  },
+  {
+    id: 'avl-insert-time',
+    prompt: 'ตามสไลด์ Running Times for AVL Trees การแทรก (insert) ใช้เวลาเท่าไหร่',
+    options: [
+      { id: 'a', label: 'O(n)', correct: false },
+      { id: 'b', label: 'O(n log n)', correct: false },
+      { id: 'c', label: 'O(log n)', correct: true },
+      { id: 'd', label: 'O(1)', correct: false },
+    ],
+    explain: 'ระบุตรงในสไลด์ "insert is O(log n)"',
+  },
+];
+
+export default function Chapter04Page() {
+  return (
+    &lt;ChapterLayout chapter={CHAPTER}&gt;
+      &lt;Stage
+        operationLabel="insert(54) + rebalance"
+        scopeLabel="AVL Tree"
+        steps={AVL_INSERT_STEPS}
+        code={AVL_CODE}
+        legend={NODE_STATE_LEGEND}
+        renderDiagram={(step) =&gt; (step.scene?.type === 'tree' ? (
+          &lt;TreeDiagram scene={step.scene} nodePositions={AVL_NODE_POS} baseEdges={AVL_BASE_EDGES} newNodeId="54" depthGuides={AVL_DEPTH_GUIDES} viewBoxHeight={320} /&gt;
+        ) : null)}
+      /&gt;
+
+      &lt;main className="px-6 md:px-10 py-9 max-w-[860px] mx-auto"&gt;
+        &lt;p className="text-[15px] leading-[1.75] mb-9" style={{ color: 'var(--color-muted-foreground)' }}&gt;
+          {CONCEPT_POINTS[0]}
+        &lt;/p&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Lesson&lt;/h2&gt;
+          &lt;LessonExplainer sections={LESSON_SECTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Concept&lt;/h2&gt;
+          &lt;ConceptCard points={CONCEPT_POINTS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Complexity&lt;/h2&gt;
+          &lt;ComplexityTable rows={COMPLEXITY_ROWS} /&gt;
+        &lt;/section&gt;
+
+        &lt;section className="mb-10"&gt;
+          &lt;h2 className="mono text-[10.5px] tracking-[.14em] uppercase mb-4" style={{ color: 'var(--color-faint-foreground)' }}&gt;Quiz&lt;/h2&gt;
+          &lt;Quiz questions={QUIZ_QUESTIONS} /&gt;
+        &lt;/section&gt;
+
+        &lt;ChapterNav prev={prev} next={next} /&gt;
+      &lt;/main&gt;
+    &lt;/ChapterLayout&gt;
+  );
+}</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Write Chapter04Page.test.tsx and run it</strong></div>
+  <pre>// src/chapters/04-search-trees/Chapter04Page.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import Chapter04Page from './Chapter04Page';
+
+describe('Chapter04Page', () =&gt; {
+  it('renders the stage, concept content, complexity table, and quiz', () =&gt; {
+    render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter04Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    expect(screen.getByText('insert(54) + rebalance')).toBeInTheDocument();
+    expect(screen.getAllByText(/ต่างกันไม่เกิน 1/).length).toBeGreaterThan(0);
+    expect(screen.getByText('restructure (1 rotation)')).toBeInTheDocument();
+  });
+
+  it('shows node 62 in the diagram itself as the new subtree root after the rotation step', () =&gt; {
+    const { container } = render(
+      &lt;MemoryRouter&gt;
+        &lt;Chapter04Page /&gt;
+      &lt;/MemoryRouter&gt;
+    );
+    // step chips are buttons labeled "N chip-text" — click into the rotation step
+    const rotateChip = screen.getByText(/หมุนต้นไม้/);
+    rotateChip.click();
+    // scope to the SVG diagram, not the whole page — a quiz answer option is also literally
+    // labeled '62' and would make this assertion pass even if the diagram were broken/empty
+    const svg = container.querySelector('svg')!;
+    const svgLabels = Array.from(svg.querySelectorAll('text')).map((t) =&gt; t.textContent);
+    expect(svgLabels).toContain('62');
+    expect(svgLabels).toContain('54'); // regression guard: node 54 must not be a dangling edge with no node
+  });
+});</pre>
+  <p>Run: <code>npx vitest run src/chapters/04-search-trees/</code> — expect PASS (2 tests).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 4: Typecheck, commit</strong></div>
+  <pre>npx tsc -b
+git add src/chapters/04-search-trees/
+git commit -m "feat: build chapter 04 (Search Trees, AVL rotation demo)"</pre>
+
+  <h3>Task 4: Wire chapter 04's route in App.tsx</h3>
+  <p class="pathline">Modify: <code>src/App.tsx</code>, <code>src/App.test.tsx</code></p>
+  <p class="note">Read the current App.tsx first — add this route alongside whatever Plans A/C have already landed, don't overwrite them. Chapter 04 doesn't change the root-redirect target (it's not the earliest-in-order chapter unless it's the only one built) — only add the new route and a "still works" assertion; update the "unbuilt chapter" test's target chapter to one that's still genuinely unbuilt (e.g. <code>hash-tables</code> if Plan A hasn't landed, or <code>heaps-pq</code> once Plans A/C have).</p>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Add the route</strong></div>
+  <pre>// src/App.tsx
+import Chapter04Page from './chapters/04-search-trees/Chapter04Page';
+// ...
+&lt;Route path="/chapter/search-trees" element={&lt;Chapter04Page /&gt;} /&gt;</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 2: Add a regression test for the new route, adjust the "unbuilt" test's target chapter if needed</strong></div>
+  <pre>// src/App.test.tsx — add this test to whatever the file currently has:
+it('serves chapter 04 at its own route', () =&gt; {
+  window.location.hash = '#/chapter/search-trees';
+  render(&lt;App /&gt;);
+  expect(screen.getByText('insert(54) + rebalance')).toBeInTheDocument();
+});
+// If the existing "unbuilt chapter" test targets 'search-trees', change its target to a chapter
+// that's still available:false at this point (check src/data/chapters.ts for the current state).</pre>
+
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 3: Run full suite, typecheck, commit</strong></div>
+  <pre>npx vitest run
+npx tsc -b
+git add src/App.tsx src/App.test.tsx
+git commit -m "feat: wire route for chapter 04"</pre>
+
+  <h3>Task 5: Production build verification</h3>
+  <p class="pathline">No files changed.</p>
+  <div class="step"><input type="checkbox" disabled /> <strong>Step 1: Build and open from disk</strong></div>
+  <pre>npm run build</pre>
+  <p>Open <code>dist/index.html</code> as a <code>file://</code> URL. Step through chapter 04's demo — confirm the tree visibly animates from the before-layout to the after-layout on the rotation step (CSS transition, not a jump-cut), and that chapter 03's own demo still renders identically to before this plan.</p>
+
+</div>
+</body>
+</html>
