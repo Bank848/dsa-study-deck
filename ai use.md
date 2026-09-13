@@ -110,3 +110,50 @@ spawn subagent 3 ตัว (บท 06/07/08) อ่าน PDF ต้นทาง
 แก้ทั้ง 4 จุด รัน test/tsc ผ่านหมด (42/42, clean) commit `c1000f17`
 
 **ประสานงาน push:** เพราะ repo นี้เป็น personal vault backup (ไม่มี PR flow) และ local master ตอนนั้นนำหน้า origin 28-30 commits จากทั้งสอง session พร้อมกัน (ผม + `com-sci-learn-27` ที่ทำ Plan B บทฮีป/heaps คู่ขนานอยู่) — ถาม user ว่าจะ push ยังไง ผู้ใช้เลือก "รอ peer session เสร็จก่อนค่อย push" — ส่งข้อความถาม peer ผ่าน `SendMessage` ยืนยันว่าทำเสร็จแล้วทั้งคู่ก่อนเดินหน้า push จริง
+
+## 10. Plan D/B/C — บท 04/05/01 (ต่อจาก vault repo เดิม, sync เข้า repo แยกนี้)
+
+**สั่ง:** "execute Plan D → Plan B → Plan C" (3 แผนสุดท้ายจาก 4 แผนที่ plan-pro เขียนไว้ — Plan D
+บท 04 Search Trees/AVL rotation, Plan B บท 05 Heaps/sift-down, Plan C บท 01 Intro & Big-O/arrayMax)
+ตามด้วย `/code-review` + `/simplify` เต็มไดฟ์ แล้ว ship
+
+**AI ทำ:** รันในโปรเจกต์ต้นทาง `D:\brain\com sci learn\com-sci-site` (vault repo,
+`brain-vault-backup`) ตามลำดับที่แผนกำหนด (Plan D ก่อนเพราะ generalize `TreeDiagram.tsx` ที่ Plan
+B ก็ต้องใช้ร่วม):
+
+- **Plan D (บท 04):** แก้ `TreeDiagram.tsx` จาก hardcode เฉพาะบท 03 เป็น prop-driven
+  (`nodePositions`/`baseEdges`/`viewBoxHeight` ฯลฯ), เพิ่ม `positions`/`edgeList` ใน `TreeScene`
+  รองรับ animate rotation ด้วย CSS transition (สลับ before/after snapshot แทน JS tween)
+- **Plan B (บท 05):** เพิ่ม `HeapArrayDiagram.tsx` ใหม่ (array-as-tree แทน pointer tree จริง),
+  `INDEX_EDGES` derive จาก `ARRAY_0.length`
+- **Plan C (บท 01):** เพิ่ม `CounterScene`/`CounterDiagram.tsx`/`GrowthChart.tsx` สำหรับนับ
+  primitive operation ของ `arrayMax`
+
+เจอบั๊กจริงระหว่างทำ (ไม่ใช่แค่ plan บอกไว้แล้ว): SVG `height` ไม่ scale ตาม `viewBoxHeight` ใหม่
+(บท 04 สูงกว่าบท 03), `AFTER_POS` ของ rotation เขียนพิกัดซ้ำทั้ง 9 โหนดทั้งที่ขยับจริงแค่ 4,
+`INDEX_EDGES` ของ heap hardcode ทั้งที่ derive จาก array length ได้ — แก้ทั้งหมด, บวก false-positive
+2 จุดจาก Angle A reviewer (เข้าใจผิดว่า pseudocode line highlight offset ผิด ทั้งที่ `Stage.tsx`
+ใช้ 1-indexed ถูกอยู่แล้ว — ตรวจเองแล้วไม่เอาเข้ารายงาน) รัน `/code-review`(medium)+`/simplify` จบ
+ผ่าน test 55/55, `tsc -b` clean
+
+**ประสานงาน sync:** ระหว่างทำ พบว่า **repo แยกต่างหาก `dsa-study-deck` ถูกสร้างขึ้นแล้ว** (import
+มาจาก vault snapshot ก่อนหน้า, มี PR #1 เปิดค้างอยู่) — user ยืนยันให้ทำงานต่อใน vault repo ตามเดิม
+แล้วค่อย sync ผลลัพธ์เข้า `dsa-study-deck` ทีหลัง
+
+ระหว่างจะ ship พบว่า **peer session อีกตัวใน local clone เดียวกัน push+merge งานเทียบเท่าเข้า
+`origin/master` ของ vault ไปแล้วโดยตรง** (ไม่ผ่าน PR) สองครั้งติดกัน (race เกิดขึ้นระหว่างที่กำลัง
+เซ็ต branch ของตัวเองพอดี) — ตรวจ diff แล้วยืนยันว่าเนื้อหาตรงกัน 100% ไม่มีข้อมูลหาย, ลบ branch
+ของตัวเองที่กลายเป็น redundant ทิ้ง (local; remote เก็บไว้ตามที่ user ขอ) แล้ว sync โค้ดจริงจาก
+vault master เข้า `dsa-study-deck`'s PR #1 (branch `initial-import`) ด้วย `git archive` (ดึงเฉพาะ
+ไฟล์ที่ git track จริง ไม่เอา `node_modules`/`dist`) — มีแค่ 3 ไฟล์ที่ต่างจาก snapshot เดิม
+(`TreeDiagram.tsx`, `04-search-trees/steps.ts`, `05-heaps-pq/steps.ts`) commit เข้า PR
+
+**สั่ง:** "merge ไหม" → "mark ready and merge"
+
+**AI ทำ:** `gh pr ready` แล้ว `gh pr merge --squash` — PR #1 merge เข้า `main` ของ
+`dsa-study-deck` แล้ว
+
+**หมายเหตุ:** browser-based visual verification (Task 5 ของแต่ละแผน — เปิด `dist/index.html`
+สเต็ปดู demo จริง) ทำไม่ได้ทั้ง 3 แผนเพราะ `browseros-neo` timeout ทุกครั้งที่เรียก
+snapshot/screenshot/act กับหน้าที่มีเนื้อหาจริง (ยืนยันว่าเป็นปัญหาระดับ tool ไม่ใช่ตัวเว็บพัง)
+— แจ้ง user ไว้เป็น known gap, พึ่ง automated test coverage (55/55 ผ่าน) แทน
